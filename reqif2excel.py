@@ -66,12 +66,28 @@ def delete_files_except_extension(folder_path, except_extension):
 
 
 def get_files_with_extension(folder_path, file_extension):
+    """
+       Searches for files with the specified extension in the given folder path and its subfolders.
+
+       Args:
+           folder_path (str): The root folder path to search in.
+           file_extension (str): The file extension to search for (e.g., 'txt', 'xml').
+
+       Returns:
+           list: A list of file paths matching the specified extension.
+       """
     try:
-        # Suchen nach Dateien mit der angegebenen Dateiendung im Ordner
-        files_list = glob.glob(os.path.join(folder_path, f"*.{file_extension}"))
-        
-        # Optional: Ausgabe der gefundenen Dateien
-        print(f"Found {len(files_list)} '{file_extension}' files in '{folder_path}':")
+        files_list = []
+        # Traverse the folder and its subfolders
+        for root, _, files in os.walk(folder_path):
+            for file in files:
+                if file.endswith(
+                        f".{file_extension}"):  # Match the file extension
+                    files_list.append(os.path.join(root, file))
+
+        # Optional: Output the found files
+        print(
+            f"Found {len(files_list)} '{file_extension}' files in '{folder_path}':")
         for file_path in files_list:
             print(file_path)
         
