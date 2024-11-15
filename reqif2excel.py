@@ -82,7 +82,7 @@ def delete_files_except_extensions(folder_path, allowed_extensions):
             f"Error deleting files except '{allowed_extensions}' in '{folder_path}': {str(e)}")
 
 
-def get_files_with_extension(folder_path, file_extension):
+def get_files_with_extension(folder_path, file_extensions):
     """
        Searches for files with the specified extension in the given folder path and its subfolders.
 
@@ -98,13 +98,14 @@ def get_files_with_extension(folder_path, file_extension):
         # Traverse the folder and its subfolders
         for root, _, files in os.walk(folder_path):
             for file in files:
-                if file.endswith(
-                        f".{file_extension}"):  # Match the file extension
+                # Check if the file ends with any of the specified extensions
+                if any(file.endswith(f".{ext}") for ext in file_extensions):
                     files_list.append(os.path.join(root, file))
 
         # Optional: Output the found files
         print(
-            f"Found {len(files_list)} '{file_extension}' files in '{folder_path}':")
+            f"Found {len(files_list)} files with extensions "
+            f"{', '.join(file_extensions)} in '{folder_path}': ")
         for file_path in files_list:
             print(file_path)
         
@@ -155,16 +156,18 @@ def main():
     # Extract all recursively zipped files
     extract_all_files(source_folder, reqif_folder)
     
-    # Delete all files except reqifs
+    # Delete all files except reqifs and xmls
     delete_files_except_extensions(reqif_folder, ['reqif', 'xml'])
     
-    # convert to excel
-    files = get_files_with_extension(reqif_folder, 'reqif')
+    # get all files with extension reqif and xml
+    files = get_files_with_extension(reqif_folder, ['reqif', 'xml'])
                 
     original_path = os.getcwd()
     os.chdir(excel_folder)        
     for file in files:
-        base_filename = (file.split("\\")[-1].replace(".reqif",""))
+        base_filename = file.split("\\")[-1]
+        base_filename = base_filename.replace(".reqif","").replace(".xml","")
+        print(base_filename)
         reqif_document = pyreqif.reqif.load(file)
         pyreqif.xlsx.dump(reqif_document, base_filename+"_local_conversion.xlsx")
     os.chdir(original_path)
