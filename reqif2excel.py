@@ -1,12 +1,10 @@
 import os
 import zipfile
-import pandas as pd
 import shutil
 import glob
 import os.path
 import pyreqif.reqif
 import pyreqif.rif
-import sys
 import pyreqif.xlsx
 
 
