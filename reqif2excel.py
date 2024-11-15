@@ -112,29 +112,15 @@ def get_files_with_extension(folder_path, file_extensions):
         return files_list
     
     except Exception as e:
-        print(f"Error getting '{file_extension}' files in '{folder_path}': {str(e)}")
+        print(f"Error searching for files in '{folder_path}': {str(e)}")
         return []
-
-
-# Beispielaufruf
-folder_path = 'path_to_your_folder'
-file_extension = 'txt'  # Beispiel: Dateien mit der Endung '.txt' suchen
-files_list = get_files_with_extension(folder_path, file_extension)
-print("Files list:")
-print(files_list)
-
 
 def main():
 
     # Ping: Von Kunde --> Bosch
-    # source_folder = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PING\PING16"  # Update this with the path to your folder containing the zip files
-    # reqif_folder  = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PING\PING16\reqif"  # Update this with the path to store extracted REQIF files
-    # excel_folder  = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PING\PING16\excel"  # Update this with the path to save Excel files
-
-    # Audi Ping
     # Path containing the reqIf files (Zip Files)
     source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
-    # Path containing the  extracted REQIF files
+    # Path containing the extracted REQIF/XML files
     reqif_folder = r"D:\AUDI\Reqif_Extracted"
     # Folder containg the converted excel files
     excel_folder = r"D:\AUDI\Reqif2Excel_Converted"
@@ -167,7 +153,6 @@ def main():
     for file in files:
         base_filename = file.split("\\")[-1]
         base_filename = base_filename.replace(".reqif","").replace(".xml","")
-        print(base_filename)
         reqif_document = pyreqif.reqif.load(file)
         pyreqif.xlsx.dump(reqif_document, base_filename+"_local_conversion.xlsx")
     os.chdir(original_path)
