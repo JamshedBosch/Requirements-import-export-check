@@ -48,21 +48,38 @@ def delete_folder(folder_path):
         print(f"Error deleting '{folder_path}': {str(e)}")
 
 
-def delete_files_except_extension(folder_path, except_extension):
+def delete_files_except_extensions(folder_path, allowed_extensions):
+    """
+    Deletes all files and directories in the given folder path except files with the specified extensions.
+
+    Args:
+        folder_path (str): The folder path to clean up.
+        allowed_extensions (list): List of allowed file extensions (e.g., ['reqif', 'xml']).
+    """
     try:
-        # Suchen nach Dateien im Ordner
+        # Get all files and directories in the folder
         all_files = glob.glob(os.path.join(folder_path, "*"))
-        
-        # Durchlaufen und Löschen der Dateien, die nicht der Ausnahme-Endung entsprechen
+
+        # Loop through all items in the folder
         for file_path in all_files:
-            if not file_path.endswith(f".{except_extension}") and os.path.isfile(file_path):
-                os.remove(file_path)
-                print(f"Deleted file: {file_path}")
-        
-        print(f"All files except '{except_extension}' files in '{folder_path}' have been successfully deleted.")
-    
+            # Check if it's a file and doesn't match the allowed extensions
+            if os.path.isfile(file_path):
+                if not any(file_path.endswith(f".{ext}") for ext in
+                           allowed_extensions):
+                    os.remove(file_path)
+                    print(f"Deleted file: {file_path}")
+            # Check if it's a directory
+            elif os.path.isdir(file_path):
+                # Optionally delete directories (uncomment if needed)
+                # os.rmdir(file_path)  # Removes empty directories only
+                print(f"Skipping directory: {file_path}")
+
+        print(
+            f"All files except {', '.join(allowed_extensions)} files in '{folder_path}' have been successfully deleted.")
+
     except Exception as e:
-        print(f"Error deleting files except '{except_extension}' in '{folder_path}': {str(e)}")
+        print(
+            f"Error deleting files except '{allowed_extensions}' in '{folder_path}': {str(e)}")
 
 
 def get_files_with_extension(folder_path, file_extension):
@@ -115,7 +132,7 @@ def main():
 
     # Audi Ping
     # Path containing the reqIf files (Zip Files)
-    source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-13_10-22-42-383_export"
+    source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
     # Path containing the  extracted REQIF files
     reqif_folder = r"D:\AUDI\Reqif_Extracted"
     # Folder containg the converted excel files
@@ -139,7 +156,7 @@ def main():
     extract_all_files(source_folder, reqif_folder)
     
     # Delete all files except reqifs
-    delete_files_except_extension(reqif_folder, 'reqif')
+    delete_files_except_extensions(reqif_folder, ['reqif', 'xml'])
     
     # convert to excel
     files = get_files_with_extension(reqif_folder, 'reqif')
