@@ -14,17 +14,30 @@ def extract_all_files(source_folder, destination_folder):
     for root, _, files in os.walk(source_folder):
         for file in files:
             if file.endswith('.zip') or file.endswith('.reqifz'):
+                # construct the file path
                 file_path = os.path.join(root, file)
                 extract_zip_recursive(file_path, destination_folder)
 
 
 def extract_zip_recursive(file_path, destination_folder):
-    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-        zip_ref.extractall(destination_folder)
-        for name in zip_ref.namelist():
-            nested_zip_path = os.path.join(destination_folder, name)
-            if nested_zip_path.endswith('.zip') or nested_zip_path.endswith('.reqifz'):
-                extract_zip_recursive(nested_zip_path, destination_folder)
+    try:
+
+        # Check if the file is a valid ZIP file
+        if not zipfile.is_zipfile(file_path):
+            print(f"Skipping invalid zip file: {file_path}")
+            return
+
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            zip_ref.extractall(destination_folder)
+            for name in zip_ref.namelist():
+                nested_zip_path = os.path.join(destination_folder, name)
+                if nested_zip_path.endswith('.zip') or nested_zip_path.endswith('.reqifz'):
+                    extract_zip_recursive(nested_zip_path, destination_folder)
+
+    except zipfile.BadZipFile:
+        print(f"Error: {file_path} is not a valid zip file.")
+    except Exception as e:
+        print(f"Unexpected error with file {file_path}: {e}")
 
 
 def delete_folder(folder_path):
@@ -86,11 +99,11 @@ def main():
 
     # Audi Ping
     # Path containing the reqIf files (Zip Files)
-    source_folder = r"D:\AUDI\Reqif\2024_KW31_Export_QLAH SSP\2024-07-29_12-26-08-571_export"
+    source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-13_10-22-42-383_export"
     # Path containing the  extracted REQIF files
-    reqif_folder = r"D:\AUDI\Reqif\reqif"
+    reqif_folder = r"D:\AUDI\Reqif_Extracted"
     # Folder containg the converted excel files
-    excel_folder = r"D:\AUDI\Reqif\excel"
+    excel_folder = r"D:\AUDI\Reqif2Excel_Converted"
 
     # PONG: Von Bosch --> Kunde
     # source_folder = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PONG\PONG9"  # Update this with the path to your folder containing the zip files
@@ -118,8 +131,8 @@ def main():
     original_path = os.getcwd()
     os.chdir(excel_folder)        
     for file in files:
-        base_filename  = (file.split("\\")[-1].replace(".reqif",""))
-        reqif_document  = pyreqif.reqif.load(file)
+        base_filename = (file.split("\\")[-1].replace(".reqif",""))
+        reqif_document = pyreqif.reqif.load(file)
         pyreqif.xlsx.dump(reqif_document, base_filename+"_local_conversion.xlsx")
     os.chdir(original_path)
 
