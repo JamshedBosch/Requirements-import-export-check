@@ -113,21 +113,31 @@ def get_files_with_extension(folder_path, file_extensions):
         print(f"Error searching for files in '{folder_path}': {str(e)}")
         return []
 
+
 def main():
+    import_check = True
+    export_check = False
 
     # Ping: Von Kunde --> Bosch
-    # Path containing the reqIf files (Zip Files)
-    source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
-    # Path containing the extracted REQIF/XML files
-    reqif_folder = r"D:\AUDI\Reqif_Extracted"
-    # Folder containg the converted excel files
-    excel_folder = r"D:\AUDI\Reqif2Excel_Converted"
+    if import_check:
+        # Path containing the reqIf files (Zip Files)
+        source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
+        # Path containing the extracted REQIF/XML files
+        reqif_folder = r"D:\AUDI\Import_Reqif_Extracted"
+        # Folder containg the converted excel files
+        excel_folder = r"D:\AUDI\Import_Reqif2Excel_Converted"
 
     # PONG: Von Bosch --> Kunde
-    # source_folder = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PONG\PONG9"  # Update this with the path to your folder containing the zip files
-    # reqif_folder  = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PONG\PONG9\reqif"  # Update this with the path to store extracted REQIF files
-    # excel_folder  = r"\\bosch.com\dfsrb\DfsDE\DIV\CS\DE_CS$\Prj\Customer\DC\1_all\MBOS2Alpha\PONG\PONG9\excel"  # Update this with the path to save Excel files
-
+    elif export_check:
+        # Path containing the reqIf files (Zip Files)
+        source_folder = r"D:\AUDI\Export 20241115"
+        # Path containing the extracted REQIF/XML files
+        reqif_folder = r"D:\AUDI\Export_Reqif_Extracted"
+        # Folder containg the converted excel files
+        excel_folder = r"D:\AUDI\Export_Reqif2Excel_Converted"
+    else:
+        print("Please set the import or export variable to True")
+        return
 
     # delete folders
     delete_folder(reqif_folder)
