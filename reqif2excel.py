@@ -115,11 +115,12 @@ def get_files_with_extension(folder_path, file_extensions):
 
 
 def main():
-    import_check = True
-    export_check = False
+
+    # Set the check type here: 0 for Import Check, 1 for Export Check
+    check_type = 1  # Change to 1 for Export Check if needed
 
     # Ping: Von Kunde --> Bosch
-    if import_check:
+    if check_type == 0:
         # Path containing the reqIf files (Zip Files)
         source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
         # Path containing the extracted REQIF/XML files
@@ -128,16 +129,13 @@ def main():
         excel_folder = r"D:\AUDI\Import_Reqif2Excel_Converted"
 
     # PONG: Von Bosch --> Kunde
-    elif export_check:
+    else:
         # Path containing the reqIf files (Zip Files)
-        source_folder = r"D:\AUDI\Export 20241115"
+        source_folder = r"D:\AUDI\LAHs_Export_TO_AUDI\Export 20241115"
         # Path containing the extracted REQIF/XML files
         reqif_folder = r"D:\AUDI\Export_Reqif_Extracted"
         # Folder containg the converted excel files
         excel_folder = r"D:\AUDI\Export_Reqif2Excel_Converted"
-    else:
-        print("Please set the import or export variable to True")
-        return
 
     # delete folders
     delete_folder(reqif_folder)
