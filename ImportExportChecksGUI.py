@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import os
 
+
 class ImportExportGui:
     def __init__(self, master):
         self.master = master
@@ -31,8 +32,12 @@ class ImportExportGui:
         self.check_type_frame = tk.Frame(master)
         self.check_type_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         self.check_type_var = tk.IntVar(value=CheckConfiguration.IMPORT_CHECK)
+
+        # set the label for Select type
         tk.Label(self.check_type_frame, text="Select Check Type:",
                  font=("Helvetica", 12)).grid(row=0, column=0, sticky="w")
+
+        # create Radio buttons for import and export
         tk.Radiobutton(self.check_type_frame, text="Import",
                        variable=self.check_type_var,
                        value=CheckConfiguration.IMPORT_CHECK,
@@ -85,11 +90,13 @@ class ImportExportGui:
             "\nInstructions for use will be added here."
         )
         messagebox.showinfo("About", about_text)
+
     def add_path_entry(self, parent, label_text, browse_command, row):
         """Helper function to add label, entry, and browse button."""
         label = tk.Label(parent, text=label_text, font=("Helvetica", 12))
         label.grid(row=row, column=0, sticky="w", padx=5, pady=10)
 
+        # Hold the text entered(folder path) in the entry field.
         entry_var = tk.StringVar()
         entry = tk.Entry(parent, textvariable=entry_var, width=40,
                          font=("Helvetica", 10))
@@ -118,9 +125,44 @@ class ImportExportGui:
         self.excel_path_var.set(filedialog.askdirectory())
 
     def convert_files(self):
-        # Implement file conversion logic here
-        # Example logic to enable "Execute Checks" if Excel files are present
-        self.update_status_bar("Files converted successfully.")
+        """Execute the conversion logic based on the selected radio button."""
+        check_type = self.check_type_var.get()  # Get the selected radio button value
+        operation_type = {CheckConfiguration.IMPORT_CHECK: "Import",
+                          CheckConfiguration.EXPORT_CHECK: "Export"}
+
+        # Ensure the check type is valid
+        if check_type not in operation_type:
+            self.update_status_bar(
+                "No valid option selected. Please select Import or Export.")
+            return
+
+        # Shared logic for both Import and Export
+        operation = operation_type[check_type]
+        self.update_status_bar(f"Performing {operation} Conversion...")
+        print(f"\n{operation} Checks Active")
+
+        # Retrieve folder paths
+        reqif_folder = self.reqif_path_var.get()
+        unzip_folder = self.unzip_path_var.get()
+        excel_folder = self.excel_path_var.get()
+
+        # Display folder paths for debugging
+        print(f"Reqif Folder: {reqif_folder}"
+              f"\nUnzip folder: {unzip_folder}"
+              f"\nExcel storage folder: {excel_folder}\n")
+
+        # Create and process the ReqIF to Excel conversion
+        processor = ReqIF2ExcelProcessor(
+            source_folder=reqif_folder,
+            reqif_folder=unzip_folder,
+            excel_folder=excel_folder,
+            check_type=check_type
+        )
+        processor.process()
+
+        # Update the status bar after completion
+        self.update_status_bar(
+            f"{operation} Conversion completed successfully.")
 
         # Check if Excel files exist in the specified folder
         excel_path = self.excel_path_var.get()
