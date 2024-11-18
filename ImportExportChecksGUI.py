@@ -1,13 +1,14 @@
 from ReqIF2ExelConverter import ReqIF2ExcelProcessor
 from ImportExportChecks import ReqIFProcessor, CheckConfiguration
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, ttk, messagebox
+import os
 
 class ImportExportGui:
     def __init__(self, master):
         self.master = master
         master.title("Import Export Checker")
-        master.geometry("400x600")
+        master.geometry("600x400")
 
         # create  the menu bar
         menubar = tk.Menu(master)
@@ -16,91 +17,96 @@ class ImportExportGui:
         # Create the File menu
         file_menu = tk.Menu(menubar)
         menubar.add_cascade(label="File", menu=file_menu)
-        file_menu.add_command(label="Open")
-        file_menu.add_command(label="Save")
-        file_menu.add_separator()
+        # file_menu.add_command(label="Open")
+        # file_menu.add_command(label="Save")
+        # file_menu.add_separator()
         file_menu.add_command(label="Exit", command=master.quit)
 
         # Create the Help menu
         help_menu = tk.Menu(menubar)
         menubar.add_cascade(label="Help", menu=help_menu)
-        help_menu.add_command(label="About")
+        help_menu.add_command(label="About", command=self.show_about_dialog)
 
         # Check Type Selection Frame
         self.check_type_frame = tk.Frame(master)
         self.check_type_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         self.check_type_var = tk.IntVar(value=CheckConfiguration.IMPORT_CHECK)
         tk.Label(self.check_type_frame, text="Select Check Type:",
-                 font=("Helvetica", 12)).pack(side=tk.LEFT)
-        tk.Radiobutton(self.check_type_frame, text="Import Check",
+                 font=("Helvetica", 12)).grid(row=0, column=0, sticky="w")
+        tk.Radiobutton(self.check_type_frame, text="Import",
                        variable=self.check_type_var,
                        value=CheckConfiguration.IMPORT_CHECK,
-                       font=("Helvetica", 10)).pack(side=tk.LEFT, padx=10)
-        tk.Radiobutton(self.check_type_frame, text="Export Check",
+                       font=("Helvetica", 10)).grid(row=0, column=1, padx=10,
+                                                    sticky="w")
+        tk.Radiobutton(self.check_type_frame, text="Export",
                        variable=self.check_type_var,
                        value=CheckConfiguration.EXPORT_CHECK,
-                       font=("Helvetica", 10)).pack(side=tk.LEFT, padx=10)
+                       font=("Helvetica", 10)).grid(row=0, column=2, padx=10,
+                                                    sticky="w")
 
         # Paths Frame
         self.path_frame = tk.Frame(master)
         self.path_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
 
-        self.reqif_path_var = tk.StringVar()
-        reqif_path_label = tk.Label(self.path_frame, text="ReqIF Path:",
-                                    font=("Helvetica", 12))
-        reqif_path_label.pack(side=tk.TOP, padx=10, pady=5)
-        reqif_path_entry = tk.Entry(self.path_frame,
-                                    textvariable=self.reqif_path_var, width=40,
-                                    font=("Helvetica", 10))
-        reqif_path_entry.pack(side=tk.TOP, padx=10, pady=5)
-        reqif_path_button = tk.Button(self.path_frame, text="Browse",
-                                      command=self.browse_reqif_path,
-                                      font=("Helvetica", 10))
-        reqif_path_button.pack(side=tk.TOP, padx=10, pady=5)
-
-        self.unzip_path_var = tk.StringVar()
-        unzip_path_label = tk.Label(self.path_frame, text="Unzip Path:",
-                                    font=("Helvetica", 12))
-        unzip_path_label.pack(side=tk.TOP, padx=10, pady=5)
-        unzip_path_entry = tk.Entry(self.path_frame,
-                                    textvariable=self.unzip_path_var, width=40,
-                                    font=("Helvetica", 10))
-        unzip_path_entry.pack(side=tk.TOP, padx=10, pady=5)
-        unzip_path_button = tk.Button(self.path_frame, text="Browse",
-                                      command=self.browse_unzip_path,
-                                      font=("Helvetica", 10))
-        unzip_path_button.pack(side=tk.TOP, padx=10, pady=5)
-
-        self.excel_path_var = tk.StringVar()
-        excel_path_label = tk.Label(self.path_frame,
-                                    text="Generated Excel Path:",
-                                    font=("Helvetica", 12))
-        excel_path_label.pack(side=tk.TOP, padx=10, pady=5)
-        excel_path_entry = tk.Entry(self.path_frame,
-                                    textvariable=self.excel_path_var, width=40,
-                                    font=("Helvetica", 10))
-        excel_path_entry.pack(side=tk.TOP, padx=10, pady=5)
-        excel_path_button = tk.Button(self.path_frame, text="Browse",
-                                      command=self.browse_excel_path,
-                                      font=("Helvetica", 10))
-        excel_path_button.pack(side=tk.TOP, padx=10, pady=5)
+        self.add_path_entry(self.path_frame, "ReqIF Folder Path:",
+                            self.browse_reqif_path, 0)
+        self.add_path_entry(self.path_frame, "Unzip Folder Path:",
+                            self.browse_unzip_path, 1)
+        self.add_path_entry(self.path_frame, "Excel Storage Path:",
+                            self.browse_excel_path, 2)
 
         # Buttons Frame
         self.button_frame = tk.Frame(master)
-        self.button_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
-        convert_button = tk.Button(self.button_frame, text="Convert",
+        self.button_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=20)
+
+        self.convert_button = tk.Button(self.button_frame, text="Convert",
                                    command=self.convert_files,
-                                   font=("Helvetica", 12))
-        convert_button.pack(side=tk.LEFT, padx=10)
-        execute_button = tk.Button(self.button_frame, text="Execute Checks",
+                                   font=("Helvetica", 12), width=15, height=2)
+        self.convert_button.pack(side=tk.LEFT, padx=20)
+
+        self.execute_button = tk.Button(self.button_frame, text="Execute Checks",
                                    command=self.execute_checks,
-                                   font=("Helvetica", 12))
-        execute_button.pack(side=tk.LEFT, padx=10)
+                                   font=("Helvetica", 12), width=15, height=2, stat=tk.DISABLED)
+        self.execute_button.pack(side=tk.LEFT, padx=20)
 
         # Status bar
         self.status_bar = tk.Label(master, text="", bd=1, relief=tk.SUNKEN,
                                    anchor=tk.W, font=("Helvetica", 10))
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    def show_about_dialog(self):
+        about_text = (
+            "Import Export Checker\n\n"
+            "Version: 1.0\n"
+            "This tool allows users to perform Import and Export checks for ReqIF files.\n\n"
+            "Features:\n"
+            "- Convert ReqIF files to Excel format\n"
+            "- Execute Import/Export checks\n"
+            "\nInstructions for use will be added here."
+        )
+        messagebox.showinfo("About", about_text)
+    def add_path_entry(self, parent, label_text, browse_command, row):
+        """Helper function to add label, entry, and browse button."""
+        label = tk.Label(parent, text=label_text, font=("Helvetica", 12))
+        label.grid(row=row, column=0, sticky="w", padx=5, pady=10)
+
+        entry_var = tk.StringVar()
+        entry = tk.Entry(parent, textvariable=entry_var, width=40,
+                         font=("Helvetica", 10))
+        entry.grid(row=row, column=1, padx=5, pady=10)
+
+        browse_button = tk.Button(parent, text="Browse",
+                                  command=browse_command,
+                                  font=("Helvetica", 10), width=10)
+        browse_button.grid(row=row, column=2, padx=5, pady=10)
+
+        # Save reference to the entry variable
+        if label_text == "ReqIF Folder Path:":
+            self.reqif_path_var = entry_var
+        elif label_text == "Unzip Folder Path:":
+            self.unzip_path_var = entry_var
+        elif label_text == "Excel Storage Path:":
+            self.excel_path_var = entry_var
 
     def browse_reqif_path(self):
         self.reqif_path_var.set(filedialog.askdirectory())
@@ -113,7 +119,18 @@ class ImportExportGui:
 
     def convert_files(self):
         # Implement file conversion logic here
+        # Example logic to enable "Execute Checks" if Excel files are present
         self.update_status_bar("Files converted successfully.")
+
+        # Check if Excel files exist in the specified folder
+        excel_path = self.excel_path_var.get()
+        if os.path.isdir(excel_path) and any(
+                file.endswith(".xlsx") or file.endswith(".xls") for file in
+                os.listdir(excel_path)):
+            self.execute_button.config(state=tk.NORMAL)
+        else:
+            self.update_status_bar(
+                "No Excel files found in the specified path. Execute Checks disabled.")
 
     def execute_checks(self):
         check_type = self.check_type_var.get()
