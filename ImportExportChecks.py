@@ -21,12 +21,22 @@ class DataValidator:
 
     # Check Nr.1
     @staticmethod
-    def check_empty_object_id_with_forbidden_cr_status(df):
+    def check_empty_object_id_with_forbidden_cr_status(df, file_path):
         """
         Checks if 'Object ID' is empty and 'CR-Status_Bosch_PPx' has forbidden values.
         Returns findings as a list of dictionaries.
         """
         findings = []
+        # Check for required columns
+        required_columns = ['Object ID', 'CR-Status_Bosch_PPx']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        if missing_columns:
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns},"
+                f" in File: {file_path}")
+            return findings
+
         forbidden_status = ['014,', '013,', '100,']
         for index, row in df.iterrows():
             if pd.isna(row['Object ID']) and row['CR-Status_Bosch_PPx'] in forbidden_status:
@@ -42,13 +52,24 @@ class DataValidator:
 
     # Check Nr.2
     @staticmethod
-    def check_cr_status_bosch_ppx_conditions(df):
+    def check_cr_status_bosch_ppx_conditions(df, file_path):
         """
         Checks if 'CR-Status_Bosch_PPx' is '---', 'CR-ID_Bosch_PPx' is not empty,
         and 'BRS-1Box_Status_Hersteller_Bosch_PPx' is not 'verworfen'.
         Returns findings as a list of dictionaries.
         """
         findings = []
+        # Check for required columns
+        required_columns = ['CR-Status_Bosch_PPx', 'CR-ID_Bosch_PPx',
+                            'BRS-1Box_Status_Zulieferer_Bosch_PPx']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        if missing_columns:
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns},"
+                f" in File: {file_path}")
+            return findings
+
         for index, row in df.iterrows():
             if (row['CR-Status_Bosch_PPx'] == "---" and
                     not pd.isna(row['CR-ID_Bosch_PPx']) and
@@ -71,15 +92,22 @@ class DataValidator:
     """ Export Checks"""
     # Check Nr.1
     @staticmethod
-    def check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df):
+    def check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df, file_path):
         """
         Checks if 'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung',
         then 'BRS-1Box_Status_Zulieferer_Bosch_PPx' must be 'akzeptiert' or 'abgelehnt'.
         Returns findings as a list of dictionaries.
         """
         findings = []
-        if 'BRS-1Box_Status_Zulieferer_Bosch_PPx' not in df.columns:
-            print("Warning: 'BRS-1Box_Status_Zulieferer_Bosch_PPx' column not found in the file.")
+        # Check for required columns
+        required_columns = ['CR-ID_Bosch_PPx', 'Typ',
+                            'BRS-1Box_Status_Zulieferer_Bosch_PPx']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        if missing_columns:
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns},"
+                f" in File: {file_path}")
             return findings
 
         for index, row in df.iterrows():
@@ -98,25 +126,33 @@ class DataValidator:
         return findings
 
     # Check Nr.2
-    def check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df):
+    def check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df, file_path):
         """
         Checks if 'Typ' is 'Überschrift' or 'Information', then 'BRS-1Box_Status_Zulieferer_Bosch_PPx' must be 'n/a'.
         Returns findings as a list of dictionaries.
         """
         findings = []
-        if 'BRS-1Box_Status_Zulieferer_Bosch_PPx' not in df.columns:
-            print("Warning: 'BRS-1Box_Status_Zulieferer_Bosch_PPx' column not found in the file.")
+        required_columns = ['Typ', 'BRS-1Box_Status_Zulieferer_Bosch_PPx']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+
+        if missing_columns:
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns},"
+                f" in File: {file_path}")
             return findings
+
         for index, row in df.iterrows():
             if row['Typ'] in ["Überschrift,", "Information,"]:
-                if row['BRS-1Box_Status_Zulieferer_Bosch_PPx'] != "n/a":
+                value = str(
+                    row['BRS-1Box_Status_Zulieferer_Bosch_PPx']).lower()
+                if value != "n/a":
                     findings.append({
                         'Row': index + 2,
-                        # Adjust for Excel row (index + 2 to account for header row)
                         'Attribute': 'Typ, BRS-1Box_Status_Zulieferer_Bosch_PPx',
                         'Issue': ("'Typ' is 'Überschrift' or 'Information', "
                                   "but 'BRS-1Box_Status_Zulieferer_Bosch_PPx' is not 'n/a'"),
-                        'Value': f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}"
+                        'Value': f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {value}"
                     })
         return findings
 
@@ -150,7 +186,7 @@ class ReportGenerator:
 
 
 class ChecksProcessor:
-    """Main processor for REQIF file validation."""
+    """Main processor for Excel file Checks."""
 
     def __init__(self, check_type, excel_folder):
         self.check_type = check_type
@@ -174,22 +210,26 @@ class ChecksProcessor:
 
     def _process_file(self, file_path):
         """Process a single Excel file."""
-        df = pd.read_excel(file_path)
+        # Read Excel file with special handling of missing values:
+        #   - keep_default_na=False: Preserves strings like 'n/a', 'N/A', 'NA' as actual strings instead of converting them to NaN
+        #   - na_values=['']: Only treats completely empty cells as missing values (NaN)
+        # Read Excel file: preserve 'n/a' as string (keep_default_na=False) and only treat empty cells as NaN (na_values=[''])
+        df = pd.read_excel(file_path, keep_default_na=False, na_values=[''])
 
         # Select checks based on type
         # Import check AUDI ==> BOSCH
         if self.check_type == CheckConfiguration.IMPORT_CHECK:
             findings = (
                     DataValidator.check_empty_object_id_with_forbidden_cr_status(
-                        df) +
-                    DataValidator.check_cr_status_bosch_ppx_conditions(df)
+                        df, file_path) +
+                    DataValidator.check_cr_status_bosch_ppx_conditions(df, file_path)
             )
         else:
             # Export check BOSCH ==> AUDI
             findings = (
-                DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df)
+                DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df, file_path)
                 +
-                DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df)
+                DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df, file_path)
             )
 
         # Generate report
@@ -208,7 +248,7 @@ def main():
     # Set the check type: 0 for Import Check, 1 for Export Check
     check_type = CheckConfiguration.IMPORT_CHECK  # Change to EXPORT_CHECK if needed
 
-    processor = ChecksProcessor(check_type)
+    processor = ChecksProcessor(check_type, CheckConfiguration.IMPORT_FOLDERS[check_type])
     reports = processor.process_folder()
 
     print(
