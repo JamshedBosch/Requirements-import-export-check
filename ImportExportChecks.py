@@ -13,31 +13,41 @@ class CheckConfiguration:
         EXPORT_CHECK: r"D:\AUDI\Export_Reqif2Excel_Converted"
     }
 
-    REPORT_FOLDER = r"D:\AUDI\report"
+    REPORT_FOLDER = os.path.join(os.getcwd(), "report")
 
 
 class DataValidator:
-    """Performs specific validation checks on DataFrame."""
+    """Import Checks """
 
+    # Check Nr.1
     @staticmethod
     def check_empty_object_id_with_forbidden_cr_status(df):
-        """Check for empty Object ID with forbidden CR-Status."""
+        """
+        Checks if 'Object ID' is empty and 'CR-Status_Bosch_PPx' has forbidden values.
+        Returns findings as a list of dictionaries.
+        """
         findings = []
         forbidden_status = ['014,', '013,', '100,']
         for index, row in df.iterrows():
-            if pd.isna(row['Object ID']) and row[
-                'CR-Status_Bosch_PPx'] in forbidden_status:
+            if pd.isna(row['Object ID']) and row['CR-Status_Bosch_PPx'] in forbidden_status:
+                object_id = "Empty"
                 findings.append({
                     'Row': index + 2,
+                    # Excel rows start at 1; +2 accounts for header row
                     'Attribute': 'Object ID, CR-Status_Bosch_PPx',
                     'Issue': "Empty 'Object ID' with forbidden 'CR-Status_Bosch_PPx' value",
-                    'Value': f"Object ID: Empty, CR-Status_Bosch_PPx: {row['CR-Status_Bosch_PPx']}"
+                    'Value': f"Object ID: {object_id}, CR-Status_Bosch_PPx: {row['CR-Status_Bosch_PPx']}"
                 })
         return findings
 
+    # Check Nr.2
     @staticmethod
     def check_cr_status_bosch_ppx_conditions(df):
-        """Check CR-Status conditions."""
+        """
+        Checks if 'CR-Status_Bosch_PPx' is '---', 'CR-ID_Bosch_PPx' is not empty,
+        and 'BRS-1Box_Status_Hersteller_Bosch_PPx' is not 'verworfen'.
+        Returns findings as a list of dictionaries.
+        """
         findings = []
         for index, row in df.iterrows():
             if (row['CR-Status_Bosch_PPx'] == "---" and
@@ -46,32 +56,67 @@ class DataValidator:
                         'BRS-1Box_Status_Hersteller_Bosch_PPx'] != "verworfen"):
                 findings.append({
                     'Row': index + 2,
-                    'Attribute': 'CR-Status related attributes',
-                    'Issue': "'CR-Status_Bosch_PPx' issue with related attributes",
+                    # Adjust for Excel row (index + 2 to account for header row)
+                    'Attribute': 'CR-Status_Bosch_PPx, CR-ID_Bosch_PPx, BRS-1Box_Status_Hersteller_Bosch_PPx',
+                    'Issue': (
+                        "'CR-Status_Bosch_PPx' is '---' while 'CR-ID_Bosch_PPx' is not empty "
+                        "and 'BRS-1Box_Status_Hersteller_Bosch_PPx' is not 'verworfen'"),
                     'Value': (
                         f"CR-Status_Bosch_PPx: {row['CR-Status_Bosch_PPx']}, "
-                        f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}")
+                        f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
+                        f"BRS-1Box_Status_Hersteller_Bosch_PPx: {row['BRS-1Box_Status_Hersteller_Bosch_PPx']}")
                 })
         return findings
 
+    """ Export Checks"""
+    # Check Nr.1
     @staticmethod
-    def check_cr_id_with_typ_and_rb_as_status(df):
-        """Check Export-related conditions."""
+    def check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df):
+        """
+        Checks if 'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung',
+        then 'BRS-1Box_Status_Zulieferer_Bosch_PPx' must be 'akzeptiert' or 'abgelehnt'.
+        Returns findings as a list of dictionaries.
+        """
         findings = []
-        if 'RB_AS_Status' not in df.columns:
+        if 'BRS-1Box_Status_Zulieferer_Bosch_PPx' not in df.columns:
+            print("Warning: 'BRS-1Box_Status_Zulieferer_Bosch_PPx' column not found in the file.")
             return findings
 
         for index, row in df.iterrows():
-            if not pd.isna(row['BRS-1Box_Status_Zulieferer_Bosch_PPx']) and \
+            if not pd.isna(row['CR-ID_Bosch_PPx']) and \
                     row['Typ'] == "Anforderung,":
-                if row['BRS-1Box_Status_Zulieferer_Bosch_PPx'] not in [
-                    "akzeptiert", "abgelehnt"]:
+                if row['BRS-1Box_Status_Zulieferer_Bosch_PPx'] \
+                        not in ["akzeptiert", "abgelehnt"]:
                     findings.append({
                         'Row': index + 2,
-                        'Attribute': 'Export-related attributes',
-                        'Issue': "Invalid status for requirement type",
-                        'Value': (f"Typ: {row['Typ'].rstrip(',')}, "
-                                  f"Status: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}")
+                        'Attribute': 'CR-ID_Bosch_PPx, Typ, 1Box_Status_Zulieferer_Bosch_PPx',
+                        'Issue': ("'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung', "
+                                  "but 'BRS-1Box_Status_Zulieferer_Bosch_PPx' is not 'akzeptiert' or 'abgelehnt'"),
+                        'Value': (f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
+                                  f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}")
+                    })
+        return findings
+
+    # Check Nr.2
+    def check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df):
+        """
+        Checks if 'Typ' is 'Überschrift' or 'Information', then 'BRS-1Box_Status_Zulieferer_Bosch_PPx' must be 'n/a'.
+        Returns findings as a list of dictionaries.
+        """
+        findings = []
+        if 'BRS-1Box_Status_Zulieferer_Bosch_PPx' not in df.columns:
+            print("Warning: 'BRS-1Box_Status_Zulieferer_Bosch_PPx' column not found in the file.")
+            return findings
+        for index, row in df.iterrows():
+            if row['Typ'] in ["Überschrift,", "Information,"]:
+                if row['BRS-1Box_Status_Zulieferer_Bosch_PPx'] != "n/a":
+                    findings.append({
+                        'Row': index + 2,
+                        # Adjust for Excel row (index + 2 to account for header row)
+                        'Attribute': 'Typ, BRS-1Box_Status_Zulieferer_Bosch_PPx',
+                        'Issue': ("'Typ' is 'Überschrift' or 'Information', "
+                                  "but 'BRS-1Box_Status_Zulieferer_Bosch_PPx' is not 'n/a'"),
+                        'Value': f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}"
                     })
         return findings
 
@@ -104,13 +149,13 @@ class ReportGenerator:
         return report_file
 
 
-class ReqIFProcessor:
+class ChecksProcessor:
     """Main processor for REQIF file validation."""
 
-    def __init__(self, check_type):
+    def __init__(self, check_type, excel_folder):
         self.check_type = check_type
         self.report_folder = CheckConfiguration.REPORT_FOLDER
-        self.folder_path = CheckConfiguration.IMPORT_FOLDERS.get(check_type)
+        self.folder_path = excel_folder
 
     def process_folder(self):
         """Process all Excel files in the specified folder."""
@@ -132,6 +177,7 @@ class ReqIFProcessor:
         df = pd.read_excel(file_path)
 
         # Select checks based on type
+        # Import check AUDI ==> BOSCH
         if self.check_type == CheckConfiguration.IMPORT_CHECK:
             findings = (
                     DataValidator.check_empty_object_id_with_forbidden_cr_status(
@@ -139,8 +185,11 @@ class ReqIFProcessor:
                     DataValidator.check_cr_status_bosch_ppx_conditions(df)
             )
         else:
+            # Export check BOSCH ==> AUDI
             findings = (
-                DataValidator.check_cr_id_with_typ_and_rb_as_status(df)
+                DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df)
+                +
+                DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df)
             )
 
         # Generate report
@@ -159,7 +208,7 @@ def main():
     # Set the check type: 0 for Import Check, 1 for Export Check
     check_type = CheckConfiguration.IMPORT_CHECK  # Change to EXPORT_CHECK if needed
 
-    processor = ReqIFProcessor(check_type)
+    processor = ChecksProcessor(check_type)
     reports = processor.process_folder()
 
     print(

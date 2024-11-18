@@ -1,5 +1,5 @@
 from ReqIF2ExelConverter import ReqIF2ExcelProcessor
-from ImportExportChecks import ReqIFProcessor, CheckConfiguration
+from ImportExportChecks import ChecksProcessor, CheckConfiguration
 import tkinter as tk
 from tkinter import filedialog, ttk, messagebox
 import os
@@ -124,7 +124,7 @@ class ImportExportGui:
     def browse_excel_path(self):
         self.excel_path_var.set(filedialog.askdirectory())
 
-    def convert_files(self):
+    def operation_type(self):
         """Execute the conversion logic based on the selected radio button."""
         check_type = self.check_type_var.get()  # Get the selected radio button value
         operation_type = {CheckConfiguration.IMPORT_CHECK: "Import",
@@ -135,11 +135,13 @@ class ImportExportGui:
             self.update_status_bar(
                 "No valid option selected. Please select Import or Export.")
             return
+        else:
+            return operation_type[check_type]
 
-        # Shared logic for both Import and Export
-        operation = operation_type[check_type]
-        self.update_status_bar(f"Performing {operation} Conversion...")
-        print(f"\n{operation} Checks Active")
+    def convert_files(self):
+        check_type = self.operation_type()
+        self.update_status_bar(f"Performing {check_type} Conversion...")
+        print(f"\n{check_type} Checks Active")
 
         # Retrieve folder paths
         reqif_folder = self.reqif_path_var.get()
@@ -162,7 +164,7 @@ class ImportExportGui:
 
         # Update the status bar after completion
         self.update_status_bar(
-            f"{operation} Conversion completed successfully.")
+            f"{check_type} Conversion completed successfully.")
 
         # Check if Excel files exist in the specified folder
         excel_path = self.excel_path_var.get()
@@ -176,7 +178,10 @@ class ImportExportGui:
 
     def execute_checks(self):
         check_type = self.check_type_var.get()
-        processor = ReqIFProcessor(check_type)
+        self.update_status_bar(
+            f"{self.operation_type()} Checks processing started...")
+        self.master.update()  # Updates the Tkinter GUI before continuing
+        processor = ChecksProcessor(check_type, self.excel_path_var.get())
         reports = processor.process_folder()
         self.update_status_bar(
             f"Processed {len(reports)} files. Check reports in {CheckConfiguration.REPORT_FOLDER}")
