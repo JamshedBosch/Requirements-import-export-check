@@ -62,7 +62,7 @@ def check_cr_status_bosch_ppx_conditions(df):
 def check_cr_id_with_typ_and_rb_as_status(df):
     """
     Checks if 'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung',
-    then 'RB_AS_Status' must be 'accepted' or 'rejected'.
+    then 'BRS-1Box_Status_Zulieferer_Bosch_PPx' must be 'akzeptiert' or 'abgelehnt'.
     Returns findings as a list of dictionaries.
     """
     findings = []
@@ -70,15 +70,15 @@ def check_cr_id_with_typ_and_rb_as_status(df):
         print("Warning: 'RB_AS_Status' column not found in the file.")
         return findings
     for index, row in df.iterrows():
-        if not pd.isna(row['CR-ID_Bosch_PPx']) and row['Typ'] == "Anforderung,":
-            if row['RB_AS_Status'] not in ["accepted", "rejected"]:
+        if not pd.isna(row['BRS-1Box_Status_Zulieferer_Bosch_PPx']) and row['Typ'] == "Anforderung,":
+            if row['BRS-1Box_Status_Zulieferer_Bosch_PPx'] not in ["akzeptiert", "abgelehnt"]:
                 findings.append({
                     'Row': index + 2,  # Adjust for Excel row (index + 2 to account for header row)
                     'Attribute': 'CR-ID_Bosch_PPx, Typ, RB_AS_Status',
                     'Issue': ("'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung', "
                               "but 'RB_AS_Status' is not 'accepted' or 'rejected'"),
                     'Value': (f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
-                              f"Typ: {row['Typ'].rstrip(',')}, RB_AS_Status: {row['RB_AS_Status']}")
+                              f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}")
                 })
     return findings
 
@@ -191,7 +191,7 @@ def process_folder(folder_path, check_type):
 
 def main():
     # Set the check type here: 0 for Import Check, 1 for Export Check
-    check_type = 1  # Change to 1 for Export Check if needed
+    check_type = 0  # Change to 1 for Export Check if needed
 
     # Set folder_path based on check_type
     if check_type == 0:

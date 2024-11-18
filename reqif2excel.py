@@ -131,7 +131,7 @@ def main():
     # PONG: Von Bosch --> Kunde
     else:
         # Path containing the reqIf files (Zip Files)
-        source_folder = r"D:\AUDI\LAHs_Export_TO_AUDI\Export 20241115"
+        source_folder = r"D:\AUDI\LAHs_Export_TO_AUDI\Export 20240620"
         # Path containing the extracted REQIF/XML files
         reqif_folder = r"D:\AUDI\Export_Reqif_Extracted"
         # Folder containg the converted excel files
