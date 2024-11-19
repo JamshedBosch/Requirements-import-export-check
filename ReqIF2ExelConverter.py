@@ -11,10 +11,10 @@ class ReqIF2ExcelProcessor:
     def __init__(self, source_folder, reqif_folder, excel_folder,
                  check_type=0):
         """
-        Initialize the ReqIF Processor with source and destination folders
+        Initialize the ReqIF2Excel Processor with source and destination folders
 
         Args:
-            source_folder (str): Path to source ZIP files
+            source_folder (str): Path to source REQIF or XML files
             reqif_folder (str): Path to extract REQIF/XML files
             excel_folder (str): Path to store converted Excel files
             check_type (int, optional): 0 for Import Check, 1 for Export Check. Defaults to 0.
