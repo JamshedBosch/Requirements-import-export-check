@@ -1,7 +1,7 @@
 from ReqIF2ExelConverter import ReqIF2ExcelProcessor
 from ImportExportChecks import ChecksProcessor, CheckConfiguration
 import tkinter as tk
-from tkinter import filedialog, ttk, messagebox
+from tkinter import filedialog, ttk, messagebox, PhotoImage
 import os
 
 
@@ -9,6 +9,8 @@ class ImportExportGui:
     def __init__(self, master):
         self.master = master
         master.title("Import Export Checker")
+        img = PhotoImage(file='icons/check.png')
+        master.iconphoto(False, img)
         master.geometry("600x400")
 
         # create  the menu bar
