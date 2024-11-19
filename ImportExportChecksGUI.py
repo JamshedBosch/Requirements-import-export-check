@@ -12,6 +12,7 @@ class ImportExportGui:
         img = PhotoImage(file='icons/check.png')
         master.iconphoto(False, img)
         master.geometry("600x400")
+        master.resizable(False, False)
 
         # create  the menu bar
         menubar = tk.Menu(master)
@@ -55,11 +56,11 @@ class ImportExportGui:
         self.path_frame = tk.Frame(master)
         self.path_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
 
-        self.add_path_entry(self.path_frame, "ReqIF Folder Path:",
+        self.add_path_entry(self.path_frame, "ReqIF folder:",
                             self.browse_reqif_path, 0)
-        self.add_path_entry(self.path_frame, "Unzip Folder Path:",
+        self.add_path_entry(self.path_frame, "Extract folder:",
                             self.browse_unzip_path, 1)
-        self.add_path_entry(self.path_frame, "Excel Storage Path:",
+        self.add_path_entry(self.path_frame, "Excel folder:",
                             self.browse_excel_path, 2)
 
         # Buttons Frame
@@ -110,11 +111,11 @@ class ImportExportGui:
         browse_button.grid(row=row, column=2, padx=5, pady=10)
 
         # Save reference to the entry variable
-        if label_text == "ReqIF Folder Path:":
+        if label_text == "ReqIF folder:":
             self.reqif_path_var = entry_var
-        elif label_text == "Unzip Folder Path:":
+        elif label_text == "Extract folder:":
             self.unzip_path_var = entry_var
-        elif label_text == "Excel Storage Path:":
+        elif label_text == "Excel folder:":
             self.excel_path_var = entry_var
 
     def browse_reqif_path(self):
@@ -152,7 +153,7 @@ class ImportExportGui:
 
         # Display folder paths for debugging
         print(f"Reqif Folder: {reqif_folder}"
-              f"\nUnzip folder: {unzip_folder}"
+              f"\nExtract folder: {unzip_folder}"
               f"\nExcel storage folder: {excel_folder}\n")
 
         # Create and process the ReqIF to Excel conversion
