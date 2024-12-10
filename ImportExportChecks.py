@@ -32,9 +32,10 @@ class DataValidator:
         missing_columns = [col for col in required_columns if
                            col not in df.columns]
         if missing_columns:
+            check_name = __class__.check_empty_object_id_with_forbidden_cr_status.__name__
             print(
-                f"Warning: Missing columns in the DataFrame: {missing_columns},"
-                f" in File: {file_path}")
+                f"Warning: Missing columns in the DataFrame: {missing_columns}, "
+                f"in File: {file_path}.\nSkipping check: {check_name}")
             return findings
 
         forbidden_status = ['014,', '013,', '100,']
@@ -65,9 +66,10 @@ class DataValidator:
         missing_columns = [col for col in required_columns if
                            col not in df.columns]
         if missing_columns:
+            check_name = __class__.check_cr_status_bosch_ppx_conditions.__name__
             print(
-                f"Warning: Missing columns in the DataFrame: {missing_columns},"
-                f" in File: {file_path}")
+                f"Warning: Missing columns in the DataFrame: {missing_columns}, "
+                f"in File: {file_path}.\nSkipping check: {check_name}")
             return findings
 
         for index, row in df.iterrows():
@@ -86,6 +88,82 @@ class DataValidator:
                         f"CR-Status_Bosch_PPx: {row['CR-Status_Bosch_PPx']}, "
                         f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
                         f"BRS-1Box_Status_Hersteller_Bosch_PPx: {row['BRS-1Box_Status_Hersteller_Bosch_PPx']}")
+                })
+        return findings
+
+    # Check Nr.3
+    @staticmethod
+    def check_anlaufkonfiguration_empty(df, file_path):
+        """
+        Checks if 'Anlaufkonfiguration_01', 'Anlaufkonfiguration_02', 'Anlaufkonfiguration_03'
+        are empty where 'Object ID' is not empty.
+        Returns findings as a list of dictionaries.
+        """
+        findings = []
+        # Check for required columns
+        required_columns = ['Object ID', 'Anlaufkonfiguration_01',
+                            'Anlaufkonfiguration_02',
+                            'Anlaufkonfiguration_03']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        if missing_columns:
+            check_name = __class__.check_anlaufkonfiguration_empty.__name__
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns}, "
+                f"in File: {file_path}.\nSkipping check: {check_name}")
+            return findings
+
+        # Iterate through rows and check conditions
+        for index, row in df.iterrows():
+            if not pd.isna(
+                    row['Object ID']):  # Check if 'Object ID' is not empty
+                empty_columns = [col for col in required_columns[1:] if
+                                 pd.isna(row[col])]
+                if empty_columns:
+                    findings.append({
+                        'Row': index + 2,
+                        # Adjust for Excel row (index + 2 to account for header row)
+                        'Attribute': ', '.join(empty_columns),
+                        'Issue': (
+                            f"{', '.join(empty_columns)} is empty while 'Object ID' is not empty."),
+                        'Value': (f"Object ID: {row['Object ID']}, "
+                                  f"Empty Columns: {', '.join(empty_columns)}")
+                    })
+        return findings
+
+    # Check Nr.4
+    @staticmethod
+    def check_cr_id_empty_for_brs_hersteller_status(df, file_path):
+        """
+        Checks if 'CR-ID_Bosch_PPx' is empty for any
+        'BRS-1Box_Status_Hersteller_Bosch_PPx' status.
+        Returns findings as a list of dictionaries.
+        """
+        findings = []
+        # Check for required columns
+        required_columns = ['CR-ID_Bosch_PPx',
+                            'BRS-1Box_Status_Hersteller_Bosch_PPx']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        if missing_columns:
+            check_name = __class__.check_cr_id_empty_for_brs_hersteller_status.__name__
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns}, "
+                f"in File: {file_path}.\nSkipping check: {check_name}")
+            return findings
+
+        # Iterate through rows and check conditions
+        for index, row in df.iterrows():
+            if pd.isna(row[
+                           'CR-ID_Bosch_PPx']):  # Check if 'CR-ID_Bosch_PPx' is empty
+                findings.append({
+                    'Row': index + 2,
+                    # Adjust for Excel row (index + 2 to account for header row)
+                    'Attribute': 'CR-ID_Bosch_PPx, BRS-1Box_Status_Hersteller_Bosch_PPx',
+                    'Issue': ("'CR-ID_Bosch_PPx' is empty while "
+                              "'BRS-1Box_Status_Hersteller_Bosch_PPx' has a value."),
+                    'Value': (f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
+                              f"BRS-1Box_Status_Hersteller_Bosch_PPx: {row['BRS-1Box_Status_Hersteller_Bosch_PPx']}")
                 })
         return findings
 
@@ -222,7 +300,12 @@ class ChecksProcessor:
             findings = (
                     DataValidator.check_empty_object_id_with_forbidden_cr_status(
                         df, file_path) +
-                    DataValidator.check_cr_status_bosch_ppx_conditions(df, file_path)
+                    DataValidator.check_cr_status_bosch_ppx_conditions(
+                        df, file_path) +
+                    DataValidator.check_anlaufkonfiguration_empty(
+                        df, file_path) +
+                    DataValidator.check_cr_id_empty_for_brs_hersteller_status(
+                        df, file_path)
             )
         else:
             # Export check BOSCH ==> AUDI
