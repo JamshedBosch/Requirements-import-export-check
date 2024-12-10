@@ -82,7 +82,7 @@ class ImportExportGui:
 
         self.execute_button = ttk.Button(self.button_frame, text="Execute Checks",
                                         command=self.execute_checks,
-                                        style='TButton')
+                                        style='TButton', stat=tk.DISABLED)
         self.execute_button.pack(side=tk.LEFT, padx=20)
 
         # Status bar
