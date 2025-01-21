@@ -25,6 +25,17 @@ class ImportExportGui:
         style.configure('TEntry', fieldbackground='#ffffff', foreground='#333333')
         style.configure('TFrame', background='#f0f0f0')
 
+        # Configure checkbox style to match window
+        style.configure('TCheckbutton',
+                        background='#f0f0f0',  # Match window background
+                        foreground='#333333',  # Match text color
+                        font=("Helvetica", 10))  # Match font
+        style.map('TCheckbutton',
+                  background=[('active', '#f0f0f0')],
+                  # Keep background consistent when active
+                  foreground=[('active',
+                               '#333333')])  # Keep text color consistent when active
+
         # create the menu bar
         menubar = tk.Menu(master)
         master.config(menu=menubar)
@@ -63,13 +74,48 @@ class ImportExportGui:
                         style='TRadiobutton').grid(row=0, column=2, padx=10,
                                                   sticky="w")
 
+        # Add "Select compare file" label and checkbox
+        ttk.Label(self.check_type_frame, text="Select compare file:",
+                  font=("Helvetica", 12)).grid(row=1, column=0, sticky="w",
+                                               pady=(15, 5))
+
+        # Checkbox variable and button
+        self.show_path_var = tk.BooleanVar()
+        self.checkbox = ttk.Checkbutton(
+            self.check_type_frame,
+            text="",
+            variable=self.show_path_var,
+            command=self.toggle_reference_path,
+            style='TCheckbutton'
+        )
+        self.checkbox.grid(row=1, column=1, sticky="w", pady=(15, 5), padx=(25, 0))
+
         # Paths Frame
         self.path_frame = ttk.Frame(master)
         self.path_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
 
+        # Add path entries
         self.add_path_entry(self.path_frame, "ReqIF folder:", self.browse_reqif_path, 0)
         self.add_path_entry(self.path_frame, "Extract folder:", self.browse_unzip_path, 1)
         self.add_path_entry(self.path_frame, "Excel folder:", self.browse_excel_path, 2)
+
+        # Reference path entry and browse button (initially hidden)
+        self.ref_path_var = tk.StringVar()
+        self.ref_path_label = ttk.Label(self.path_frame, text="Compare file:",
+                                        font=("Helvetica", 12))
+        self.ref_path_entry = ttk.Entry(
+            self.path_frame,
+            textvariable=self.ref_path_var,
+            width=40,
+            font=("Helvetica", 10)
+        )
+        self.ref_browse_button = tk.Button(
+            self.path_frame,
+            text="Browse",
+            command=self.browse_reference_path,
+            font=("Helvetica", 10),
+            width=10  # Match width with other browse buttons
+        )
 
         # Buttons Frame
         self.button_frame = ttk.Frame(master)
@@ -136,6 +182,14 @@ class ImportExportGui:
     def browse_excel_path(self):
         self.excel_path_var.set(filedialog.askdirectory())
 
+    def browse_reference_path(self):
+        """Open file dialog to select reference Excel file"""
+        file_path = filedialog.askopenfilename(
+            filetypes=[("Excel files", "*.xlsx;*.xls")]
+        )
+        if file_path:
+            self.ref_path_var.set(file_path)
+
     def operation_type(self):
         """Execute the conversion logic based on the selected radio button."""
         check_type = self.check_type_var.get()  # Get the selected radio button value
@@ -193,10 +247,25 @@ class ImportExportGui:
         self.update_status_bar(
             f"{self.operation_type()} Checks processing started...")
         self.master.update()  # Updates the Tkinter GUI before continuing
+        reference_file = self.ref_path_var.get() if self.show_path_var.get() else None
+        print(f"Path of the refernce file is:  '{reference_file}'")
+
         processor = ChecksProcessor(check_type, self.excel_path_var.get())
         reports = processor.process_folder()
         self.update_status_bar(
             f"Processed {len(reports)} files. Check reports in {CheckConfiguration.REPORT_FOLDER}")
+
+    def toggle_reference_path(self):
+        """Show or hide the reference path entry and browse button based on checkbox state"""
+        if self.show_path_var.get():
+            self.ref_path_label.grid(row=3, column=0, sticky="w", pady=10)
+            self.ref_path_entry.grid(row=3, column=1, padx=5, pady=10)
+            self.ref_browse_button.grid(row=3, column=2, padx=5, pady=10)
+        else:
+            self.ref_path_label.grid_remove()
+            self.ref_path_entry.grid_remove()
+            self.ref_browse_button.grid_remove()
+            self.ref_path_var.set("")
 
     def update_status_bar(self, message):
         self.status_bar.config(text=message)
