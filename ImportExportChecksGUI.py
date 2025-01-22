@@ -25,16 +25,34 @@ class ImportExportGui:
         style.configure('TEntry', fieldbackground='#ffffff', foreground='#333333')
         style.configure('TFrame', background='#f0f0f0')
 
-        # Configure Compare checkbox style to match window
-        style.configure('TCheckbutton',
-                        background='#f0f0f0',  # Match window background
-                        foreground='#333333',  # Match text color
-                        font=("Helvetica", 10))  # Match font
-        style.map('TCheckbutton',
+        # Configure custom checkbox style with no focus indicators
+        style.layout('NoFocus.TCheckbutton',
+                     [('Checkbutton.padding', {'children':
+                                                   [('Checkbutton.indicator',{'side': 'left',
+                                                      'sticky': ''}),
+                                                    ('Checkbutton.focus',
+                                                     {'children':
+                                                          [(
+                                                           'Checkbutton.label',
+                                                           {
+                                                               'sticky': 'nswe'})],
+                                                      'side': 'left',
+                                                      'sticky': ''})],
+                                               'sticky': 'nswe'})])
+
+        style.configure('NoFocus.TCheckbutton',
+                        background='#f0f0f0',
+                        foreground='#333333',
+                        focuscolor='#f0f0f0',
+                        highlightthickness=0,
+                        borderwidth=0)
+
+        style.map('NoFocus.TCheckbutton',
                   background=[('active', '#f0f0f0')],
-                  # Keep background consistent when active
-                  foreground=[('active',
-                               '#333333')])  # Keep text color consistent when active
+                  foreground=[('active', '#333333')],
+                  focuscolor=[('active', '#f0f0f0')],
+                  highlightcolor=[('focus', '#f0f0f0')],
+                  relief=[('focus', 'flat')])
 
         # create the menu bar
         menubar = tk.Menu(master)
@@ -86,9 +104,10 @@ class ImportExportGui:
             text="",
             variable=self.show_path_var,
             command=self.toggle_reference_path,
-            style='TCheckbutton'
+            style='NoFocus.TCheckbutton',
+            takefocus=False  # Prevent focus from keyboard
         )
-        self.checkbox.grid(row=1, column=1, sticky="w", pady=(15, 5), padx=(25, 0))
+        self.checkbox.grid(row=1, column=1, sticky="w", pady=(15, 5), padx=(10, 0))
 
         # Paths Frame
         self.path_frame = ttk.Frame(master)
@@ -250,7 +269,7 @@ class ImportExportGui:
         reference_file = self.ref_path_var.get() if self.show_path_var.get() else None
         print(f"Path of the refernce file is:  '{reference_file}'")
 
-        processor = ChecksProcessor(check_type, self.excel_path_var.get())
+        processor = ChecksProcessor(check_type, self.excel_path_var.get(), reference_file)
         reports = processor.process_folder()
         self.update_status_bar(
             f"Processed {len(reports)} files. Check reports in {CheckConfiguration.REPORT_FOLDER}")
