@@ -25,7 +25,7 @@ class ImportExportGui:
         style.configure('TEntry', fieldbackground='#ffffff', foreground='#333333')
         style.configure('TFrame', background='#f0f0f0')
 
-        # Configure checkbox style to match window
+        # Configure Compare checkbox style to match window
         style.configure('TCheckbutton',
                         background='#f0f0f0',  # Match window background
                         foreground='#333333',  # Match text color
