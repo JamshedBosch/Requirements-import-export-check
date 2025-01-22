@@ -167,6 +167,147 @@ class DataValidator:
                 })
         return findings
 
+    # Check Nr.6
+    @staticmethod
+    def check_object_text_with_status_hersteller_bosch_ppx(df, compare_df,
+                                                           file_path):
+        """
+        Compares the 'Object Text' attribute based on 'Object ID' with a compare file.
+        If 'Object Text' differs, ensure 'BRS-1Box_Status_Hersteller_Bosch_PPx' is 'neu/geändert'.
+        Optionally ignores spaces in the 'Object Text' for comparison.
+        Logs findings if the condition is not met.
+        """
+        findings = []
+        # Ensure required columns exist in both DataFrames
+        required_columns = ['Object ID', 'Object Text',
+                            'BRS-1Box_Status_Hersteller_Bosch_PPx']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        missing_compare_columns = [col for col in required_columns[:2] if
+                                   col not in compare_df.columns]
+
+        if missing_columns:
+            check_name = __class__.check_object_text_with_compare_file.__name__
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns}, "
+                f"in File: {file_path}.\nSkipping check: {check_name}")
+            return findings
+
+        if missing_compare_columns:
+            check_name = __class__.check_object_text_with_compare_file.__name__
+            print(
+                f"Warning: Missing columns in the compare file: {missing_compare_columns}.\nSkipping check: {check_name}")
+            return findings
+
+        # Create a dictionary for quick lookup of 'Object Text' from compare file
+        compare_dict = compare_df.set_index('Object ID')[
+            'Object Text'].to_dict()
+
+        # Iterate through rows in the main DataFrame
+        for index, row in df.iterrows():
+            object_id = row['Object ID']
+            object_text = row['Object Text']
+            brs_status = row.get('BRS-1Box_Status_Hersteller_Bosch_PPx', None)
+
+            # Skip rows with missing 'Object ID'
+            if pd.isna(object_id):
+                continue
+
+            # Check if the 'Object ID' exists in the compare file
+            if object_id in compare_dict:
+                compare_text = compare_dict[object_id]
+
+                # Normalize both object_text and compare_text
+                normalized_object_text = HelperFunctions.normalize_text(
+                    object_text)
+                normalized_compare_text = HelperFunctions.normalize_text(
+                    compare_text)
+                if normalized_object_text != normalized_compare_text:
+                    if brs_status not in ['neu/geändert']:
+                        findings.append({
+                            'Row': index + 2,  # Adjust for Excel row numbering
+                            'Attribute': 'Object Text, BRS-1Box_Status_Hersteller_Bosch_PPx',
+                            'Issue': (
+                                f"'Object Text' differs but 'BRS-1Box_Status_Hersteller_Bosch_PPx' is not 'neu/geändert'."
+                            ),
+                            'Value': (
+                                f"Object ID: {object_id}, "
+                                f"Main File Object Text: {object_text}, "
+                                f"Compare File Object Text: {compare_text}, "
+                                f"BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
+                            )
+                        })
+
+        return findings
+
+    # Check Nr.7
+    @staticmethod
+    def check_object_text_with_rb_as_status(df, compare_df, file_path):
+        """
+        Compares 'Object Text' in the main file with the compare file based on 'Object ID'.
+        If 'Object Text' differs, ensure 'RB_AS_Status' is not 'accepted', 'no_req', or 'canceled_closed'.
+        Logs findings if the condition is not met.
+        """
+        findings = []
+        # Ensure required columns exist in both DataFrames
+        required_columns = ['Object ID', 'Object Text', 'RB_AS_Status']
+        missing_columns = [col for col in required_columns if
+                           col not in df.columns]
+        missing_compare_columns = [col for col in required_columns[:2] if
+                                   col not in compare_df.columns]
+
+        if missing_columns:
+            check_name = __class__.check_object_text_with_rb_as_status.__name__
+            print(
+                f"Warning: Missing columns in the DataFrame: {missing_columns}, "
+                f"in File: {file_path}.\nSkipping check: {check_name}")
+            return findings
+
+        if missing_compare_columns:
+            check_name = __class__.check_object_text_with_rb_as_status.__name__
+            print(
+                f"Warning: Missing columns in the compare file: {missing_compare_columns}.\nSkipping check: {check_name}")
+            return findings
+
+        # Create a dictionary for quick lookup of 'Object Text' from compare file
+        compare_dict = compare_df.set_index('Object ID')[
+            'Object Text'].to_dict()
+
+        # Iterate through rows in the main DataFrame
+        for index, row in df.iterrows():
+            object_id = row['Object ID']
+            object_text = row['Object Text']
+            rb_as_status = row.get('RB_AS_Status', None)
+
+            # Skip rows with missing 'Object ID'
+            if pd.isna(object_id):
+                continue
+
+            # Check if the 'Object ID' exists in the compare file
+            if object_id in compare_dict:
+                compare_text = compare_dict[object_id]
+
+                # If 'Object Text' differs, check 'RB_AS_Status'
+                if object_text != compare_text:
+                    if rb_as_status in ['accepted', 'no_req',
+                                        'canceled_closed']:
+                        findings.append({
+                            'Row': index + 2,  # Adjust for Excel row numbering
+                            'Attribute': 'Object Text, RB_AS_Status',
+                            'Issue': (
+                                f"'Object Text' differs but 'RB_AS_Status' is one of the prohibited values "
+                                f"('accepted', 'no_req', 'canceled_closed')."
+                            ),
+                            'Value': (
+                                f"Object ID: {object_id}, "
+                                f"Main File Object Text: {object_text}, "
+                                f"Compare File Object Text: {compare_text}, "
+                                f"RB_AS_Status: {rb_as_status}"
+                            )
+                        })
+
+        return findings
+
     """ Export Checks"""
     # Check Nr.1
     @staticmethod
@@ -266,10 +407,25 @@ class ReportGenerator:
 class ChecksProcessor:
     """Main processor for Excel file Checks."""
 
-    def __init__(self, check_type, excel_folder):
+    def __init__(self, check_type, excel_folder, compare_file=None):
         self.check_type = check_type
         self.report_folder = CheckConfiguration.REPORT_FOLDER
         self.folder_path = excel_folder
+        self.compare_file = compare_file
+        self.compare_df = None # Dataframe to hold compare file data
+
+        # if compare_file is provided, read it into a DataFrame
+        if self.compare_file:
+            try:
+                self.compare_df = pd.read_excel(self.compare_file, keep_default_na=False,
+                                                na_values=[''])
+                print(f"Compare file '{self.compare_file}' loaded successfully.")
+            except Exception as e:
+                print(f"Error loading compare file '{self.compare_file}': {e}")
+                self.compare_df = None
+
+
+
 
     def process_folder(self):
         """Process all Excel files in the specified folder."""
@@ -307,6 +463,13 @@ class ChecksProcessor:
                     DataValidator.check_cr_id_empty_for_brs_hersteller_status(
                         df, file_path)
             )
+            if self.compare_df is not None:
+                findings = (
+                        DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
+                            df, self.compare_df,  file_path))
+                # +
+                #         DataValidator.check_object_text_with_rb_as_status(
+                #             df, self.compare_df, file_path))
         else:
             # Export check BOSCH ==> AUDI
             findings = (
@@ -325,6 +488,29 @@ class ChecksProcessor:
             shutil.rmtree(folder_path, ignore_errors=True)
         except Exception as e:
             print(f"Error deleting '{folder_path}': {str(e)}")
+
+
+class HelperFunctions:
+
+    @staticmethod
+    def normalize_text(text, ignore_spaces_and_semicolons=True):
+        """
+        Normalize the given text by removing spaces, semicolons, and optionally quotes.
+
+        :param ignore_spaces_and_semicolons:
+        :param text: The text to normalize.
+        :return: The normalized text.
+        """
+        if not isinstance(text, str):  # Ensure text is a string
+            text = str(text)  # Convert it to a string if it's not
+
+        if ignore_spaces_and_semicolons:
+            text = text.replace(" ", "")  # Remove spaces
+            text = text.replace(";", "")  # Remove semicolons
+            text = text.replace("'", "")  # Remove single quotes
+            text = text.replace('"', "")  # Remove double quotes
+
+        return text
 
 
 def main():
