@@ -40,7 +40,8 @@ class DataValidator:
 
         forbidden_status = ['014,', '013,', '100,']
         for index, row in df.iterrows():
-            if pd.isna(row['Object ID']) and row['CR-Status_Bosch_PPx'] in forbidden_status:
+            if pd.isna(row['Object ID']) and row[
+                'CR-Status_Bosch_PPx'] in forbidden_status:
                 object_id = "Empty"
                 findings.append({
                     'Row': index + 2,
@@ -62,7 +63,7 @@ class DataValidator:
         findings = []
         # Check for required columns
         required_columns = ['CR-Status_Bosch_PPx', 'CR-ID_Bosch_PPx',
-                            'BRS-1Box_Status_Zulieferer_Bosch_PPx']
+                            'BRS-1Box_Status_Hersteller_Bosch_PPx']
         missing_columns = [col for col in required_columns if
                            col not in df.columns]
         if missing_columns:
@@ -187,14 +188,14 @@ class DataValidator:
                                    col not in compare_df.columns]
 
         if missing_columns:
-            check_name = __class__.check_object_text_with_compare_file.__name__
+            check_name = __class__.check_object_text_with_status_hersteller_bosch_ppx.__name__
             print(
                 f"Warning: Missing columns in the DataFrame: {missing_columns}, "
                 f"in File: {file_path}.\nSkipping check: {check_name}")
             return findings
 
         if missing_compare_columns:
-            check_name = __class__.check_object_text_with_compare_file.__name__
+            check_name = __class__.check_object_text_with_status_hersteller_bosch_ppx.__name__
             print(
                 f"Warning: Missing columns in the compare file: {missing_compare_columns}.\nSkipping check: {check_name}")
             return findings
@@ -232,9 +233,9 @@ class DataValidator:
                             ),
                             'Value': (
                                 f"Object ID: {object_id}, "
-                                f"Main File Object Text: {object_text}, "
-                                f"Compare File Object Text: {compare_text}, "
-                                f"BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
+                                f"        Main File Object Text: {object_text}\n"
+                                f"        Compare File Object Text: {compare_text}\n"
+                                f"        BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
                             )
                         })
 
@@ -251,9 +252,9 @@ class DataValidator:
         findings = []
         # Ensure required columns exist in both DataFrames
         required_columns = ['Object ID', 'Object Text', 'RB_AS_Status']
-        missing_columns = [col for col in required_columns if
+        missing_columns = [col for col in required_columns[:2] if
                            col not in df.columns]
-        missing_compare_columns = [col for col in required_columns[:2] if
+        missing_compare_columns = [col for col in required_columns if
                                    col not in compare_df.columns]
 
         if missing_columns:
@@ -269,26 +270,38 @@ class DataValidator:
                 f"Warning: Missing columns in the compare file: {missing_compare_columns}.\nSkipping check: {check_name}")
             return findings
 
-        # Create a dictionary for quick lookup of 'Object Text' from compare file
-        compare_dict = compare_df.set_index('Object ID')[
+        # Create a dictionary for quick lookup of 'Object Text' from main file(gernerated from reqif)
+        compare_dict = df.set_index('Object ID')[
             'Object Text'].to_dict()
 
-        # Iterate through rows in the main DataFrame
-        for index, row in df.iterrows():
+        # Iterate through rows in the compare file DataFrame
+        for index, row in compare_df.iterrows():
             object_id = row['Object ID']
+            # here object_text is from the compare CCB file
             object_text = row['Object Text']
             rb_as_status = row.get('RB_AS_Status', None)
+            # Debugging
+            if rb_as_status is None:
+                print(
+                    f"Warning: 'RB_AS_Status' is None for Object ID: {object_id}")
 
-            # Skip rows with missing 'Object ID'
+                # Skip rows with missing 'Object ID'
             if pd.isna(object_id):
                 continue
 
             # Check if the 'Object ID' exists in the compare file
             if object_id in compare_dict:
+                # here the compare text is from generated reqif file
                 compare_text = compare_dict[object_id]
+                # Normalize both object_text and compare_text
+                normalized_object_text = HelperFunctions.normalize_text(
+                    object_text)
+                normalized_compare_text = HelperFunctions.normalize_text(
+                    compare_text)
 
                 # If 'Object Text' differs, check 'RB_AS_Status'
-                if object_text != compare_text:
+                if normalized_object_text != normalized_compare_text:
+                    print(f"rb_as_status: {rb_as_status}")
                     if rb_as_status in ['accepted', 'no_req',
                                         'canceled_closed']:
                         findings.append({
@@ -299,19 +312,21 @@ class DataValidator:
                                 f"('accepted', 'no_req', 'canceled_closed')."
                             ),
                             'Value': (
-                                f"Object ID: {object_id}, "
-                                f"Main File Object Text: {object_text}, "
-                                f"Compare File Object Text: {compare_text}, "
-                                f"RB_AS_Status: {rb_as_status}"
+                                  f"Object ID: {object_id}\n"
+                                  f"        Main File Object Text: {object_text}\n"
+                                  f"        Compare File Object Text: {compare_text}\n"
+                                  f"        RB_AS_Status: {rb_as_status}"
                             )
                         })
 
         return findings
 
     """ Export Checks"""
+
     # Check Nr.1
     @staticmethod
-    def check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df, file_path):
+    def check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df,
+                                                                      file_path):
         """
         Checks if 'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung',
         then 'BRS-1Box_Status_Zulieferer_Bosch_PPx' must be 'akzeptiert' or 'abgelehnt'.
@@ -337,10 +352,12 @@ class DataValidator:
                     findings.append({
                         'Row': index + 2,
                         'Attribute': 'CR-ID_Bosch_PPx, Typ, 1Box_Status_Zulieferer_Bosch_PPx',
-                        'Issue': ("'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung', "
-                                  "but 'BRS-1Box_Status_Zulieferer_Bosch_PPx' is not 'akzeptiert' or 'abgelehnt'"),
-                        'Value': (f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
-                                  f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}")
+                        'Issue': (
+                            "'CR-ID_Bosch_PPx' is not empty and 'Typ' is 'Anforderung', "
+                            "but 'BRS-1Box_Status_Zulieferer_Bosch_PPx' is not 'akzeptiert' or 'abgelehnt'"),
+                        'Value': (
+                            f"CR-ID_Bosch_PPx: {row['CR-ID_Bosch_PPx']}, "
+                            f"Typ: {row['Typ'].rstrip(',')}, BRS-1Box_Status_Zulieferer_Bosch_PPx: {row['BRS-1Box_Status_Zulieferer_Bosch_PPx']}")
                     })
         return findings
 
@@ -412,20 +429,19 @@ class ChecksProcessor:
         self.report_folder = CheckConfiguration.REPORT_FOLDER
         self.folder_path = excel_folder
         self.compare_file = compare_file
-        self.compare_df = None # Dataframe to hold compare file data
+        self.compare_df = None  # Dataframe to hold compare file data
 
         # if compare_file is provided, read it into a DataFrame
         if self.compare_file:
             try:
-                self.compare_df = pd.read_excel(self.compare_file, keep_default_na=False,
+                self.compare_df = pd.read_excel(self.compare_file,
+                                                keep_default_na=False,
                                                 na_values=[''])
-                print(f"Compare file '{self.compare_file}' loaded successfully.")
+                print(
+                    f"Compare file '{self.compare_file}' loaded successfully.")
             except Exception as e:
                 print(f"Error loading compare file '{self.compare_file}': {e}")
                 self.compare_df = None
-
-
-
 
     def process_folder(self):
         """Process all Excel files in the specified folder."""
@@ -464,18 +480,30 @@ class ChecksProcessor:
                         df, file_path)
             )
             if self.compare_df is not None:
-                findings = (
-                        DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
-                            df, self.compare_df,  file_path))
-                # +
-                #         DataValidator.check_object_text_with_rb_as_status(
-                #             df, self.compare_df, file_path))
+
+                findings += DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
+                    df, self.compare_df, file_path)
+
+                # Execute check check_object_text_with_rb_as_status and create a separate report
+                rb_as_status_findings = DataValidator.check_object_text_with_rb_as_status(
+                    df, self.compare_df, file_path)
+
+                if rb_as_status_findings:
+                    # Generate a separate report for this check
+                    ReportGenerator.generate_report(
+                        self.compare_file,
+                        self.report_folder,
+                        rb_as_status_findings
+                    )
+
         else:
             # Export check BOSCH ==> AUDI
             findings = (
-                DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(df, file_path)
-                +
-                DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(df, file_path)
+                    DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(
+                        df, file_path)
+                    +
+                    DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(
+                        df, file_path)
             )
 
         # Generate report
@@ -516,8 +544,11 @@ class HelperFunctions:
 def main():
     # Set the check type: 0 for Import Check, 1 for Export Check
     check_type = CheckConfiguration.IMPORT_CHECK  # Change to EXPORT_CHECK if needed
+    compare_file = r"D:\AUDI\comparefile\CCB_Tracking_PPE.xlsx"
 
-    processor = ChecksProcessor(check_type, CheckConfiguration.IMPORT_FOLDERS[check_type])
+    processor = ChecksProcessor(check_type,
+                                CheckConfiguration.IMPORT_FOLDERS[check_type],
+                                compare_file)
     reports = processor.process_folder()
 
     print(
