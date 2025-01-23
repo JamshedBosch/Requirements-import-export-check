@@ -224,7 +224,7 @@ class DataValidator:
                 normalized_compare_text = HelperFunctions.normalize_text(
                     compare_text)
                 if normalized_object_text != normalized_compare_text:
-                    if brs_status not in ['neu/geändert']:
+                    if brs_status not in ['neu/geändert,']:
                         findings.append({
                             'Row': index + 2,  # Adjust for Excel row numbering
                             'Attribute': 'Object Text, BRS-1Box_Status_Hersteller_Bosch_PPx',
@@ -232,10 +232,10 @@ class DataValidator:
                                 f"'Object Text' differs but 'BRS-1Box_Status_Hersteller_Bosch_PPx' is not 'neu/geändert'."
                             ),
                             'Value': (
-                                f"Object ID: {object_id}, "
-                                f"        Main File Object Text: {object_text}\n"
-                                f"        Compare File Object Text: {compare_text}\n"
-                                f"        BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
+                                f"Object ID: {object_id},\n"
+                                f"       Main File Object Text: {object_text}\n"
+                                f"       Compare File Object Text: {compare_text}\n"
+                                f"       BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
                             )
                         })
 
@@ -313,9 +313,9 @@ class DataValidator:
                             ),
                             'Value': (
                                   f"Object ID: {object_id}\n"
-                                  f"        Main File Object Text: {object_text}\n"
-                                  f"        Compare File Object Text: {compare_text}\n"
-                                  f"        RB_AS_Status: {rb_as_status}"
+                                  f"       Main File Object Text: {object_text}\n"
+                                  f"       Compare File Object Text: {compare_text}\n"
+                                  f"       RB_AS_Status: {rb_as_status}"
                             )
                         })
 
@@ -418,6 +418,7 @@ class ReportGenerator:
             else:
                 f.write("No issues found.\n")
 
+
         return report_file
 
 
@@ -488,13 +489,13 @@ class ChecksProcessor:
                 rb_as_status_findings = DataValidator.check_object_text_with_rb_as_status(
                     df, self.compare_df, file_path)
 
-                if rb_as_status_findings:
+                # if rb_as_status_findings:
                     # Generate a separate report for this check
-                    ReportGenerator.generate_report(
-                        self.compare_file,
-                        self.report_folder,
-                        rb_as_status_findings
-                    )
+                ReportGenerator.generate_report(
+                    self.compare_file,
+                    self.report_folder,
+                    rb_as_status_findings
+                )
 
         else:
             # Export check BOSCH ==> AUDI
@@ -523,10 +524,10 @@ class HelperFunctions:
     @staticmethod
     def normalize_text(text, ignore_spaces_and_semicolons=True):
         """
-        Normalize the given text by removing spaces, semicolons, and optionally quotes.
+        Normalize the given text by removing spaces, semicolons, quotes, and tab characters.
 
-        :param ignore_spaces_and_semicolons:
         :param text: The text to normalize.
+        :param ignore_spaces_and_semicolons: Whether to remove spaces and semicolons.
         :return: The normalized text.
         """
         if not isinstance(text, str):  # Ensure text is a string
@@ -534,12 +535,15 @@ class HelperFunctions:
 
         if ignore_spaces_and_semicolons:
             text = text.replace(" ", "")  # Remove spaces
+            text = text.replace("\t", "")  # Remove tab characters
             text = text.replace(";", "")  # Remove semicolons
             text = text.replace("'", "")  # Remove single quotes
             text = text.replace('"', "")  # Remove double quotes
 
-        return text
+        # Normalize all types of whitespace (e.g., newlines, extra spaces)
+        text = text.strip()  # Remove leading/trailing whitespace
 
+        return text
 
 def main():
     # Set the check type: 0 for Import Check, 1 for Export Check
