@@ -1,4 +1,6 @@
+import html
 import os
+import re
 import zipfile
 import shutil
 import glob
@@ -136,9 +138,49 @@ class ReqIF2ExcelProcessor:
             print(f"Error searching for files: {str(e)}")
             return []
 
+    def clean_text(self, raw_text):
+        """
+        Clean the given raw text by removing HTML tags and decoding HTML entities.
+
+        Args:
+            raw_text (str): The raw text with HTML tags and encoded entities.
+
+            Returns:
+                str: The cleaned text.
+        """
+        if not raw_text:
+            return ""
+
+        # Remove self-closing tags and attributes (like <br/>, <object ... />)
+        raw_text = re.sub(r'<[^>]+?/>', '', raw_text)
+
+        # Remove full HTML tags (e.g., <b>...</b>, <div>...</div>)
+        raw_text = re.sub(r'<[^>]+>', '', raw_text)
+
+        # Remove multiple consecutive whitespaces
+        raw_text = re.sub(r'\s+', ' ', raw_text)
+
+        # Decode HTML entities (e.g., &#196; to Ä)
+        cleaned_text = html.unescape(raw_text)
+
+        # Strip leading and trailing whitespace
+        return cleaned_text
+
     def convert_to_excel(self):
         """
-        Convert REQIF/XML files to Excel
+        Convert REQIF/XML files to Excel.
+        This method performs the following steps:
+        1. Changes the current working directory to the Excel folder.
+        2. Iterates over the list of REQIF/XML files.
+        3. For each file:
+            - Loads the REQIF document.
+            - Iterates over the requirements in the document.
+            - Prints the requirement ID and long name.
+            - Iterates over the values of each requirement.
+            - Cleans the HTML content of each value.
+            - Updates the value with the cleaned content.
+            - Dumps the cleaned document to an Excel file.
+        4. Changes back to the original working directory.
         """
         original_path = os.getcwd()
         os.chdir(self.excel_folder)
@@ -147,8 +189,34 @@ class ReqIF2ExcelProcessor:
             try:
                 base_filename = os.path.splitext(os.path.basename(file))[0]
                 reqif_document = pyreqif.reqif.load(file)
+
+                for requirement in reqif_document.requirementList:
+                    print(f"\nRequirement ID: {requirement._identifier}")
+                    print(f"Requirement Long Name: {requirement._longname}")
+
+                    for value in requirement.values:
+                        # Check for content, handling potential None values
+                        content = getattr(value, '_content', None)
+
+                        if content is not None:
+                            # Decode bytes if necessary
+                            if isinstance(content, bytes):
+                                content = content.decode('utf-8')
+
+                            # Print raw content before cleaning
+                            print(f"Raw Content: {content}")
+
+                            # Clean the HTML content
+
+                            cleaned_content = self.clean_text(content)
+                            print(f"Cleaned Content: {cleaned_content}")
+                            value._content = cleaned_content
+                        else:
+                            print("No content found for this value")
+
                 pyreqif.xlsx.dump(reqif_document,
                                   f"{base_filename}_local_conversion.xlsx")
+
             except Exception as e:
                 print(f"Error converting {file}: {e}")
 
@@ -168,7 +236,7 @@ def main(check_type):
     # Ping: Von Kunde --> Bosch (Import Check)
     if check_type == 0:
         print("\nImport Checks Active")
-        source_folder = r"D:\AUDI\LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
+        source_folder = r"D:\AUDI\Test\1_LAHs_import_FROM_AUDI\2024-11-06_18-17-44-174_export"
         reqif_folder = r"D:\AUDI\Import_Reqif_Extracted"
         excel_folder = r"D:\AUDI\Import_Reqif2Excel_Converted"
         print(f"Source Folder: {source_folder}"
