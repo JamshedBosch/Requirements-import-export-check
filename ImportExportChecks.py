@@ -171,7 +171,7 @@ class DataValidator:
     # Check Nr.6
     @staticmethod
     def check_object_text_with_status_hersteller_bosch_ppx(df, compare_df,
-                                                           file_path):
+                                                           file_path, compare_file_path):
         """
         Compares the 'Object Text' attribute based on 'Object ID' with a compare file.
         If 'Object Text' differs, ensure 'BRS-1Box_Status_Hersteller_Bosch_PPx' is 'neu/geändert'.
@@ -233,7 +233,9 @@ class DataValidator:
                             ),
                             'Value': (
                                 f"Object ID: {object_id},\n"
+                                f"       Main File Name: {os.path.basename(file_path)}\n"                                  
                                 f"       Main File Object Text: {object_text}\n"
+                                f"       Compare File Name: {os.path.basename(compare_file_path)}\n"                                  
                                 f"       Compare File Object Text: {compare_text}\n"
                                 f"       BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
                             )
@@ -243,7 +245,7 @@ class DataValidator:
 
     # Check Nr.7
     @staticmethod
-    def check_object_text_with_rb_as_status(df, compare_df, file_path):
+    def check_object_text_with_rb_as_status(df, compare_df, file_path, compare_file_path):
         """
         Compares 'Object Text' in the main file with the compare file based on 'Object ID'.
         If 'Object Text' differs, ensure 'RB_AS_Status' is not 'accepted', 'no_req', or 'canceled_closed'.
@@ -313,7 +315,9 @@ class DataValidator:
                             ),
                             'Value': (
                                   f"Object ID: {object_id}\n"
+                                  f"       Main File Name: { os.path.basename(compare_file_path)}\n"                                  
                                   f"       Main File Object Text: {object_text}\n"
+                                  f"       Compare File Name: {os.path.basename(file_path)}\n"
                                   f"       Compare File Object Text: {compare_text}\n"
                                   f"       RB_AS_Status: {rb_as_status}"
                             )
@@ -483,11 +487,11 @@ class ChecksProcessor:
             if self.compare_df is not None:
 
                 findings += DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
-                    df, self.compare_df, file_path)
+                    df, self.compare_df, file_path, self.compare_file)
 
                 # Execute check check_object_text_with_rb_as_status and create a separate report
                 rb_as_status_findings = DataValidator.check_object_text_with_rb_as_status(
-                    df, self.compare_df, file_path)
+                    df, self.compare_df, file_path, self.compare_file)
 
                 # if rb_as_status_findings:
                     # Generate a separate report for this check
