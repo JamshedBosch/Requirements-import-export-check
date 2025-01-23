@@ -5,6 +5,7 @@ import os
 import tkinter as tk
 from tkinter import ttk
 
+
 class ImportExportGui:
     def __init__(self, master):
         self.master = master
@@ -18,26 +19,30 @@ class ImportExportGui:
 
         # Set custom colors
         style.configure('TLabel', background='#f0f0f0', foreground='#333333')
-        style.configure('TButton', background='#007bff', foreground='#ffffff', padding=8,
+        style.configure('TButton', background='#007bff', foreground='#ffffff',
+                        padding=8,
                         font=("Helvetica", 10), relief=tk.FLAT)
         style.map('TButton', background=[('active', '#0069d9')])
-        style.configure('TRadiobutton', background='#f0f0f0', foreground='#333333')
-        style.configure('TEntry', fieldbackground='#ffffff', foreground='#333333')
+        style.configure('TRadiobutton', background='#f0f0f0',
+                        foreground='#333333')
+        style.configure('TEntry', fieldbackground='#ffffff',
+                        foreground='#333333')
         style.configure('TFrame', background='#f0f0f0')
 
         # Configure custom checkbox style with no focus indicators
         style.layout('NoFocus.TCheckbutton',
                      [('Checkbutton.padding', {'children':
-                                                   [('Checkbutton.indicator',{'side': 'left',
+                                                   [('Checkbutton.indicator',
+                                                     {'side': 'left',
                                                       'sticky': ''}),
                                                     ('Checkbutton.focus',
                                                      {'children':
-                                                          [(
-                                                           'Checkbutton.label',
-                                                           {
-                                                               'sticky': 'nswe'})],
-                                                      'side': 'left',
-                                                      'sticky': ''})],
+                                                         [(
+                                                             'Checkbutton.label',
+                                                             {
+                                                                 'sticky': 'nswe'})],
+                                                         'side': 'left',
+                                                         'sticky': ''})],
                                                'sticky': 'nswe'})])
 
         style.configure('NoFocus.TCheckbutton',
@@ -85,12 +90,12 @@ class ImportExportGui:
                         variable=self.check_type_var,
                         value=CheckConfiguration.IMPORT_CHECK,
                         style='TRadiobutton').grid(row=0, column=1, padx=10,
-                                                  sticky="w")
+                                                   sticky="w")
         ttk.Radiobutton(self.check_type_frame, text="Export",
                         variable=self.check_type_var,
                         value=CheckConfiguration.EXPORT_CHECK,
                         style='TRadiobutton').grid(row=0, column=2, padx=10,
-                                                  sticky="w")
+                                                   sticky="w")
 
         # Add "Select compare file" label and checkbox
         ttk.Label(self.check_type_frame, text="Select compare file:",
@@ -107,16 +112,20 @@ class ImportExportGui:
             style='NoFocus.TCheckbutton',
             takefocus=False  # Prevent focus from keyboard
         )
-        self.checkbox.grid(row=1, column=1, sticky="w", pady=(15, 5), padx=(10, 0))
+        self.checkbox.grid(row=1, column=1, sticky="w", pady=(15, 5),
+                           padx=(10, 0))
 
         # Paths Frame
         self.path_frame = ttk.Frame(master)
         self.path_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
 
         # Add path entries
-        self.add_path_entry(self.path_frame, "ReqIF folder:", self.browse_reqif_path, 0)
-        self.add_path_entry(self.path_frame, "Extract folder:", self.browse_unzip_path, 1)
-        self.add_path_entry(self.path_frame, "Excel folder:", self.browse_excel_path, 2)
+        self.add_path_entry(self.path_frame, "ReqIF folder:",
+                            self.browse_reqif_path, 0)
+        self.add_path_entry(self.path_frame, "Extract folder:",
+                            self.browse_unzip_path, 1)
+        self.add_path_entry(self.path_frame, "Excel folder:",
+                            self.browse_excel_path, 2)
 
         # Reference path entry and browse button (initially hidden)
         self.ref_path_var = tk.StringVar()
@@ -141,20 +150,20 @@ class ImportExportGui:
         self.button_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=20)
 
         self.convert_button = ttk.Button(self.button_frame, text="Convert",
-                                        command=self.convert_files,
-                                        style='TButton')
+                                         command=self.convert_files,
+                                         style='TButton')
         self.convert_button.pack(side=tk.LEFT, padx=20)
 
-        self.execute_button = ttk.Button(self.button_frame, text="Execute Checks",
-                                        command=self.execute_checks,
-                                        style='TButton', stat=tk.DISABLED)
+        self.execute_button = ttk.Button(self.button_frame,
+                                         text="Execute Checks",
+                                         command=self.execute_checks,
+                                         style='TButton', stat=tk.DISABLED)
         self.execute_button.pack(side=tk.LEFT, padx=20)
 
         # Status bar
         self.status_bar = ttk.Label(master, text="", relief=tk.SUNKEN,
-                                   anchor=tk.W, font=("Helvetica", 10))
+                                    anchor=tk.W, font=("Helvetica", 10))
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-
 
     def show_about_dialog(self):
         about_text = (
@@ -269,7 +278,8 @@ class ImportExportGui:
         reference_file = self.ref_path_var.get() if self.show_path_var.get() else None
         print(f"Path of the refernce file is:  '{reference_file}'")
 
-        processor = ChecksProcessor(check_type, self.excel_path_var.get(), reference_file)
+        processor = ChecksProcessor(check_type, self.excel_path_var.get(),
+                                    reference_file)
         reports = processor.process_folder()
         self.update_status_bar(
             f"Processed {len(reports)} files. Check reports in {CheckConfiguration.REPORT_FOLDER}")
@@ -298,4 +308,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
