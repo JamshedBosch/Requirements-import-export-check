@@ -191,28 +191,16 @@ class ReqIF2ExcelProcessor:
                 reqif_document = pyreqif.reqif.load(file)
 
                 for requirement in reqif_document.requirementList:
-                    print(f"\nRequirement ID: {requirement._identifier}")
-                    print(f"Requirement Long Name: {requirement._longname}")
-
                     for value in requirement.values:
                         # Check for content, handling potential None values
                         content = getattr(value, '_content', None)
-
                         if content is not None:
                             # Decode bytes if necessary
                             if isinstance(content, bytes):
                                 content = content.decode('utf-8')
-
-                            # Print raw content before cleaning
-                            print(f"Raw Content: {content}")
-
                             # Clean the HTML content
-
                             cleaned_content = self.clean_text(content)
-                            print(f"Cleaned Content: {cleaned_content}")
                             value._content = cleaned_content
-                        else:
-                            print("No content found for this value")
 
                 pyreqif.xlsx.dump(reqif_document,
                                   f"{base_filename}_local_conversion.xlsx")
