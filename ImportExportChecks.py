@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import shutil
+from ReportGenerator import ReportGenerator
 
 
 class CheckConfiguration:
@@ -232,11 +233,14 @@ class DataValidator:
                                 f"'Object Text' differs but 'BRS-1Box_Status_Hersteller_Bosch_PPx' is not 'neu/geändert'."
                             ),
                             'Value': (
-                                f"Object ID: {object_id},\n"
-                                f"       Main File Name: {os.path.basename(file_path)}\n"                                  
-                                f"       Main File Object Text: {object_text}\n"
-                                f"       Compare File Name: {os.path.basename(compare_file_path)}\n"                                  
-                                f"       Compare File Object Text: {compare_text}\n"
+                                f"Object ID: {object_id}\n\n"
+                                f"---------------\n"
+                                f"       Customer File Name: {os.path.basename(file_path)}\n"
+                                f"       Customer File Object Text: {object_text}\n"
+                                f"---------------\n"
+                                f"       Bosch File Name: {os.path.basename(compare_file_path)}\n"
+                                f"       Bosch File Object Text: {compare_text}\n"
+                                f"---------------\n"
                                 f"       BRS-1Box_Status_Hersteller_Bosch_PPx: {brs_status}"
                             )
                         })
@@ -315,10 +319,13 @@ class DataValidator:
                             ),
                             'Value': (
                                   f"Object ID: {object_id}\n"
-                                  f"       Main File Name: { os.path.basename(compare_file_path)}\n"                                  
-                                  f"       Main File Object Text: {object_text}\n"
-                                  f"       Compare File Name: {os.path.basename(file_path)}\n"
-                                  f"       Compare File Object Text: {compare_text}\n"
+                                  f"---------------\n"
+                                  f"       Bosch File Name: { os.path.basename(compare_file_path)}\n"
+                                  f"       Bosch File Object Text: {object_text}\n"
+                                  f"---------------\n"
+                                  f"       Customer File Name: {os.path.basename(file_path)}\n"
+                                  f"       Customer File Object Text: {compare_text}\n"
+                                  f"---------------\n"
                                   f"       RB_AS_Status: {rb_as_status}"
                             )
                         })
@@ -397,33 +404,6 @@ class DataValidator:
         return findings
 
 
-class ReportGenerator:
-    """Generates reports from validation findings."""
-
-    @staticmethod
-    def generate_report(file_path, report_folder, findings):
-        """Generate a text report for findings."""
-        report_file = os.path.join(report_folder,
-                                   f"{os.path.basename(file_path).replace('.xlsx', '')}_report.txt")
-
-        with open(report_file, 'w') as f:
-            f.write(f"Report for file: {os.path.basename(file_path)}\n")
-            f.write("=" * 100 + "\n\n")
-
-            if findings:
-                f.write(f"Issues found: {len(findings)}\n")
-                f.write("-" * 100 + "\n")
-                for finding in findings:
-                    f.write(f"Row: {finding['Row']}\n")
-                    f.write(f"Attribute: {finding['Attribute']}\n")
-                    f.write(f"Issue: {finding['Issue']}\n")
-                    f.write(f"Value: {finding['Value']}\n")
-                    f.write("-" * 100 + "\n")
-            else:
-                f.write("No issues found.\n")
-
-
-        return report_file
 
 
 class ChecksProcessor:
