@@ -10,7 +10,7 @@ class ImportExportGui:
     def __init__(self, master):
         self.master = master
         master.title("Import Export Checker")
-        master.geometry("600x400")
+        master.geometry("600x450")
         master.resizable(False, False)
 
         # Apply custom styles
@@ -75,6 +75,25 @@ class ImportExportGui:
         help_menu = tk.Menu(menubar)
         menubar.add_cascade(label="Help", menu=help_menu)
         help_menu.add_command(label="About", command=self.show_about_dialog)
+
+
+        # Project Selection Frame
+        self.project_frame = ttk.Frame(master)
+        self.project_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+
+        # Set the label for Select Project
+        ttk.Label(self.project_frame, text="Select Project:",
+                  font=("Helvetica", 12)).grid(row=0, column=0, sticky="w")
+
+        # Create a dropdown list for project selection
+        self.project_var = tk.StringVar(value="PPE/MLBW")
+        self.project_dropdown = ttk.Combobox(self.project_frame, textvariable=self.project_var,
+                                             postcommand=self.print_status,
+                                             values=["PPE/MLBW", "SSP"], state="readonly", style='TCombobox')
+        self.project_dropdown.grid(row=0, column=1, padx=10, sticky="w")
+        print(f"project selected is: {self.project_var.get()}")
+
+
 
         # Check Type Selection Frame
         self.check_type_frame = ttk.Frame(master)
@@ -298,6 +317,9 @@ class ImportExportGui:
 
     def update_status_bar(self, message):
         self.status_bar.config(text=message)
+
+    def print_status(self):
+        print(f"Status: {self.project_var.get()}")
 
 
 def main():
