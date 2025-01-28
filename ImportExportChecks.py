@@ -22,7 +22,7 @@ class CheckConfiguration:
     REPORT_FOLDER = os.path.join(os.getcwd(), "report")
 
 
-class DataValidator:
+class ProjectCheckerPPE:
     """Import Checks """
 
     # Check Nr.1
@@ -464,22 +464,22 @@ class ChecksProcessor:
             # Import check AUDI ==> BOSCH
             if self.check_type == CheckConfiguration.IMPORT_CHECK:
                 findings = (
-                        DataValidator.check_empty_object_id_with_forbidden_cr_status(
+                        ProjectCheckerPPE.check_empty_object_id_with_forbidden_cr_status(
                             df, file_path) +
-                        DataValidator.check_cr_status_bosch_ppx_conditions(
+                        ProjectCheckerPPE.check_cr_status_bosch_ppx_conditions(
                             df, file_path) +
-                        DataValidator.check_anlaufkonfiguration_empty(
+                        ProjectCheckerPPE.check_anlaufkonfiguration_empty(
                             df, file_path) +
-                        DataValidator.check_cr_id_empty_for_brs_hersteller_status(
+                        ProjectCheckerPPE.check_cr_id_empty_for_brs_hersteller_status(
                             df, file_path)
                 )
                 if self.compare_df is not None:
 
-                    findings += DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
+                    findings += ProjectCheckerPPE.check_object_text_with_status_hersteller_bosch_ppx(
                         df, self.compare_df, file_path, self.compare_file)
 
                     # Execute check check_object_text_with_rb_as_status and create a separate report
-                    rb_as_status_findings = DataValidator.check_object_text_with_rb_as_status(
+                    rb_as_status_findings = ProjectCheckerPPE.check_object_text_with_rb_as_status(
                         df, self.compare_df, file_path, self.compare_file)
 
                     # if rb_as_status_findings:
@@ -493,10 +493,10 @@ class ChecksProcessor:
             else:
                 # Export check BOSCH ==> AUDI
                 findings = (
-                        DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(
+                        ProjectCheckerPPE.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(
                             df, file_path)
                         +
-                        DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(
+                        ProjectCheckerPPE.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(
                             df, file_path)
                 )
         elif self.project == CheckConfiguration.PROJECT["SSP"]:

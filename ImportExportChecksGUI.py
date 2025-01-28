@@ -292,8 +292,9 @@ class ImportExportGui:
     def execute_checks(self):
         project_type = self.project_var.get()
         print(f"execute_checks for Project: {project_type}")
-
         check_type = self.check_type_var.get()
+        print(f"Checks type is: {check_type}")
+
         self.update_status_bar(
             f"{self.operation_type()} Checks processing started...")
         self.master.update()  # Updates the Tkinter GUI before continuing
