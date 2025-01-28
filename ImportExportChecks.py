@@ -3,6 +3,7 @@ import pandas as pd
 import shutil
 from ReportGenerator import ReportGenerator
 from ChecksPPE import ProjectCheckerPPE
+from ChecksSSP import  ProjectCheckerSSP
 
 
 class CheckConfiguration:
@@ -22,6 +23,7 @@ class CheckConfiguration:
 
     REPORT_FOLDER = os.path.join(os.getcwd(), "report")
 
+
 class ChecksProcessor:
     """Main processor for Excel file Checks."""
 
@@ -39,6 +41,7 @@ class ChecksProcessor:
                 self.compare_df = pd.read_excel(self.compare_file,
                                                 keep_default_na=False,
                                                 na_values=[''])
+
                 print(
                     f"Compare file '{self.compare_file}' loaded successfully.")
             except Exception as e:
@@ -111,8 +114,14 @@ class ChecksProcessor:
                             df, file_path)
                 )
         elif self.project == CheckConfiguration.PROJECT["SSP"]:
-            print(f"######## CURRENTLY NO CHECKS DEFINED ####################################")
-
+            if self.check_type == CheckConfiguration.IMPORT_CHECK:
+                # Here implement check 1 - 5
+                if self.compare_df is not None:
+                    findings += ProjectCheckerSSP.check_object_text_with_status_oem_zu_lieferant_r(
+                        df, self.compare_df, file_path, self.compare_file)
+            else:
+                # Export check BOSCH ==> AUDI
+                print("[SSP] NO EXPORT CHECKS DEFINED SOFAR")
 
         # Generate report
         return ReportGenerator.generate_report(file_path, self.report_folder,
