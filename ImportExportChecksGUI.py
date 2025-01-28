@@ -290,6 +290,9 @@ class ImportExportGui:
                 "No Excel files found in the specified path. Execute Checks disabled.")
 
     def execute_checks(self):
+        project_type = self.project_var.get()
+        print(f"execute_checks for Project: {project_type}")
+
         check_type = self.check_type_var.get()
         self.update_status_bar(
             f"{self.operation_type()} Checks processing started...")
@@ -297,7 +300,7 @@ class ImportExportGui:
         reference_file = self.ref_path_var.get() if self.show_path_var.get() else None
         print(f"Path of the refernce file is:  '{reference_file}'")
 
-        processor = ChecksProcessor(check_type, self.excel_path_var.get(),
+        processor = ChecksProcessor(project_type, check_type, self.excel_path_var.get(),
                                     reference_file)
         reports = processor.process_folder()
         self.update_status_bar(

@@ -9,6 +9,11 @@ class CheckConfiguration:
     IMPORT_CHECK = 0
     EXPORT_CHECK = 1
 
+    PROJECT = {
+        "PPE_MLBW": "PPE/MLBW",
+        "SSP": "SSP"
+    }
+
     IMPORT_FOLDERS = {
         IMPORT_CHECK: r"D:\AUDI\Import_Reqif2Excel_Converted",
         EXPORT_CHECK: r"D:\AUDI\Export_Reqif2Excel_Converted"
@@ -409,7 +414,8 @@ class DataValidator:
 class ChecksProcessor:
     """Main processor for Excel file Checks."""
 
-    def __init__(self, check_type, excel_folder, compare_file=None):
+    def __init__(self, project_type, check_type, excel_folder, compare_file=None):
+        self.project = project_type
         self.check_type = check_type
         self.report_folder = CheckConfiguration.REPORT_FOLDER
         self.folder_path = excel_folder
@@ -450,46 +456,52 @@ class ChecksProcessor:
         #   - na_values=['']: Only treats completely empty cells as missing values (NaN)
         # Read Excel file: preserve 'n/a' as string (keep_default_na=False) and only treat empty cells as NaN (na_values=[''])
         df = pd.read_excel(file_path, keep_default_na=False, na_values=[''])
+        findings = []
 
-        # Select checks based on type
-        # Import check AUDI ==> BOSCH
-        if self.check_type == CheckConfiguration.IMPORT_CHECK:
-            findings = (
-                    DataValidator.check_empty_object_id_with_forbidden_cr_status(
-                        df, file_path) +
-                    DataValidator.check_cr_status_bosch_ppx_conditions(
-                        df, file_path) +
-                    DataValidator.check_anlaufkonfiguration_empty(
-                        df, file_path) +
-                    DataValidator.check_cr_id_empty_for_brs_hersteller_status(
-                        df, file_path)
-            )
-            if self.compare_df is not None:
-
-                findings += DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
-                    df, self.compare_df, file_path, self.compare_file)
-
-                # Execute check check_object_text_with_rb_as_status and create a separate report
-                rb_as_status_findings = DataValidator.check_object_text_with_rb_as_status(
-                    df, self.compare_df, file_path, self.compare_file)
-
-                # if rb_as_status_findings:
-                    # Generate a separate report for this check
-                ReportGenerator.generate_report(
-                    self.compare_file,
-                    self.report_folder,
-                    rb_as_status_findings
+        # Select Project
+        if self.project == CheckConfiguration.PROJECT["PPE_MLBW"]:
+            # Select checks based on type
+            # Import check AUDI ==> BOSCH
+            if self.check_type == CheckConfiguration.IMPORT_CHECK:
+                findings = (
+                        DataValidator.check_empty_object_id_with_forbidden_cr_status(
+                            df, file_path) +
+                        DataValidator.check_cr_status_bosch_ppx_conditions(
+                            df, file_path) +
+                        DataValidator.check_anlaufkonfiguration_empty(
+                            df, file_path) +
+                        DataValidator.check_cr_id_empty_for_brs_hersteller_status(
+                            df, file_path)
                 )
+                if self.compare_df is not None:
 
-        else:
-            # Export check BOSCH ==> AUDI
-            findings = (
-                    DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(
-                        df, file_path)
-                    +
-                    DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(
-                        df, file_path)
-            )
+                    findings += DataValidator.check_object_text_with_status_hersteller_bosch_ppx(
+                        df, self.compare_df, file_path, self.compare_file)
+
+                    # Execute check check_object_text_with_rb_as_status and create a separate report
+                    rb_as_status_findings = DataValidator.check_object_text_with_rb_as_status(
+                        df, self.compare_df, file_path, self.compare_file)
+
+                    # if rb_as_status_findings:
+                        # Generate a separate report for this check
+                    ReportGenerator.generate_report(
+                        self.compare_file,
+                        self.report_folder,
+                        rb_as_status_findings
+                    )
+
+            else:
+                # Export check BOSCH ==> AUDI
+                findings = (
+                        DataValidator.check_cr_id_with_typ_and_brs_1box_status_zulieferer_bosch_ppx(
+                            df, file_path)
+                        +
+                        DataValidator.check_typ_with_brs_1box_status_zulieferer_bosch_ppx(
+                            df, file_path)
+                )
+        elif self.project == CheckConfiguration.PROJECT["SSP"]:
+            print(f"######## CURRENTLY NO CHECKS DEFINED ####################################")
+
 
         # Generate report
         return ReportGenerator.generate_report(file_path, self.report_folder,
