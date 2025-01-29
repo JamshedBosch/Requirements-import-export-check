@@ -48,6 +48,8 @@ class ProjectCheckerSSP:
             object_id = row['ReqIF.ForeignID']
             object_text = row['ReqIF.Text']
             oem_status = row.get('Status OEM zu Lieferant R', None)
+            if pd.isna(oem_status):
+                oem_status = "Empty"
 
             # Skip rows with missing 'Object ID'
             if pd.isna(object_id):
