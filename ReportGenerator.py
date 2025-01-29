@@ -115,77 +115,41 @@ class ReportGenerator:
     @staticmethod
     def highlight_differences(text1: str, text2: str) -> tuple[str, str]:
         """
-        Highlight the differences between two texts using HTML spans,
-        ignoring whitespace in the comparison but preserving it in display.
+        Highlight the differences between two texts using HTML spans.
+        If one text is missing, the other text is fully highlighted.
         """
 
-        def normalize_for_comparison(text):
-            """Normalize text for comparison while keeping original positions"""
-            char_mapping = []  # Keep track of original positions
-            normalized = []
-            pos = 0
+        # Ensure we remove any hidden whitespace or special formatting
+        text1 = text1.strip()
+        text2 = text2.strip()
 
-            for char in text:
-                if not (char.isspace() or char in [';', "'", '"']):
-                    normalized.append(char)
-                    char_mapping.append(pos)
-                pos += 1
+        # Debugging: Print the raw input to check if text2 is truly empty
+        # print(f"DEBUG - text1: {repr(text1)} | text2: {repr(text2)}")
 
-            return ''.join(normalized), char_mapping
+        # If one of the texts is empty, highlight the other entirely
+        if text1 and not text2:
+            return f'<span class="diff-del">{text1}</span>', '<span class="diff-add">Empty</span>'
+        if text2 and not text1:
+            return '<span class="diff-del">Empty</span>', f'<span class="diff-add">{text2}</span>'
 
-        # Get normalized versions and position mappings
-        norm1, map1 = normalize_for_comparison(text1)
-        norm2, map2 = normalize_for_comparison(text2)
+        matcher = difflib.SequenceMatcher(None, text1, text2)
+        result1, result2 = [], []
 
-        # Find differences in normalized text
-        matcher = difflib.SequenceMatcher(None, norm1, norm2)
+        for op, i1, i2, j1, j2 in matcher.get_opcodes():
+            if op == 'equal':
+                result1.append(text1[i1:i2])
+                result2.append(text2[j1:j2])
+            elif op == 'replace':
+                result1.append(f'<span class="diff-del">{text1[i1:i2]}</span>')
+                result2.append(f'<span class="diff-add">{text2[j1:j2]}</span>')
+            elif op == 'insert':
+                result2.append(f'<span class="diff-add">{text2[j1:j2]}</span>')
+            elif op == 'delete':
+                result1.append(f'<span class="diff-del">{text1[i1:i2]}</span>')
 
-        def build_highlighted(original_text, char_mapping, matcher, is_first):
-            result = []
-            current_pos = 0
+        return ''.join(result1), ''.join(result2)
 
-            for op, i1, i2, j1, j2 in matcher.get_opcodes():
-                # Handle text before the difference
-                while current_pos < len(original_text) and (
-                        not char_mapping or current_pos < char_mapping[
-                    i1 if is_first else j1]):
-                    result.append(original_text[current_pos])
-                    current_pos += 1
 
-                if op == 'equal':
-                    # Add characters from original text for this range
-                    while current_pos < len(original_text) and (
-                            char_mapping and current_pos <= char_mapping[
-                        i2 - 1 if is_first else j2 - 1]):
-                        result.append(original_text[current_pos])
-                        current_pos += 1
-                else:
-                    # Start difference span
-                    result.append(
-                        '<span class="diff-del">' if op != 'insert' else '<span class="diff-add">')
-
-                    # Add characters from original text for this range
-                    if op != 'insert' and is_first or op != 'delete' and not is_first:
-                        end_pos = char_mapping[
-                                      i2 - 1 if is_first else j2 - 1] + 1 if i2 > 0 and j2 > 0 else current_pos
-                        while current_pos < len(
-                                original_text) and current_pos < end_pos:
-                            result.append(original_text[current_pos])
-                            current_pos += 1
-
-                    result.append('</span>')
-
-            # Add any remaining text
-            while current_pos < len(original_text):
-                result.append(original_text[current_pos])
-                current_pos += 1
-
-            return ''.join(result)
-
-        highlighted1 = build_highlighted(text1, map1, matcher, True)
-        highlighted2 = build_highlighted(text2, map2, matcher, False)
-
-        return highlighted1, highlighted2
 
     @staticmethod
     def generate_html_content(file_name, total_issues, issues_content):
@@ -221,8 +185,8 @@ class ReportGenerator:
         """Format a single issue for the report."""
         # Extract customer and Bosch texts from the Value string
         value_lines = finding['Value'].split('\n')
-        customer_text = None
-        bosch_text = None
+        customer_text = ""
+        bosch_text = ""
 
         for i, line in enumerate(value_lines):
             if "Customer File Object Text:" in line:
@@ -232,19 +196,27 @@ class ReportGenerator:
                 bosch_text = line.replace("Bosch File Object Text:",
                                           "").strip()
 
-        # If we found both texts, highlight their differences
-        if customer_text is not None and bosch_text is not None:
-            highlighted_customer, highlighted_bosch = ReportGenerator.highlight_differences(
-                customer_text, bosch_text)
+        # Convert None values to empty strings (if needed)
+        customer_text = customer_text if customer_text else ""
+        bosch_text = bosch_text if bosch_text else ""
 
-            # Replace the original texts in value_lines with highlighted versions
-            for i, line in enumerate(value_lines):
-                if "Customer File Object Text:" in line:
-                    value_lines[
-                        i] = f"       Customer File Object Text: {highlighted_customer}"
-                elif "Bosch File Object Text:" in line:
-                    value_lines[
-                        i] = f"       Bosch File Object Text: {highlighted_bosch}"
+        # Debugging output
+        # print(f"DEBUG - format_issue called for Row: {finding['Row']}")
+        # print(f"DEBUG - Customer Text: {repr(customer_text)}")
+        # print(f"DEBUG - Bosch Text: {repr(bosch_text)}")
+
+        # Ensure highlight_differences is always called
+        highlighted_customer, highlighted_bosch = ReportGenerator.highlight_differences(
+            customer_text, bosch_text)
+
+        # Replace the original texts in value_lines with highlighted versions
+        for i, line in enumerate(value_lines):
+            if "Customer File Object Text:" in line:
+                value_lines[
+                    i] = f"       Customer File Object Text: {highlighted_customer}"
+            elif "Bosch File Object Text:" in line:
+                value_lines[
+                    i] = f"       Bosch File Object Text: {highlighted_bosch}"
 
         formatted_value = "<br>".join(value_lines)
 
