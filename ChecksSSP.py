@@ -57,11 +57,23 @@ class ProjectCheckerSSP:
             if object_id in compare_dict:
                 compare_text = compare_dict[object_id]
 
+                # Convert to string and strip whitespace
+                object_text_str = str(object_text) if not pd.isna(
+                    object_text) else ""
+                compare_text_str = str(compare_text) if not pd.isna(
+                    compare_text) else ""
+                object_text_str = object_text_str.strip()
+                compare_text_str = compare_text_str.strip()
+
+                # Skip only if both texts are empty
+                if not object_text_str and not compare_text_str:
+                    continue
+
                 # Normalize both object_text and compare_text
                 normalized_object_text = HelperFunctions.normalize_text(
-                    object_text)
+                    object_text_str)
                 normalized_compare_text = HelperFunctions.normalize_text(
-                    compare_text)
+                    compare_text_str)
                 if normalized_object_text != normalized_compare_text:
                     if oem_status not in ['zu bewerten,']:
                         findings.append({
@@ -74,10 +86,10 @@ class ProjectCheckerSSP:
                                 f"ReqIF.ForeignID: {object_id}\n\n"
                                 f"---------------\n"
                                 f"       Customer File Name: {os.path.basename(file_path)}\n"
-                                f"       Customer File Object Text: {object_text}\n"
+                                f"       Customer File Object Text: {object_text_str}\n"
                                 f"---------------\n"
                                 f"       Bosch File Name: {os.path.basename(compare_file_path)}\n"
-                                f"       Bosch File Object Text: {compare_text}\n"
+                                f"       Bosch File Object Text: {compare_text_str}\n"
                                 f"---------------\n"
                                 f"       Status OEM zu Lieferant R: {oem_status}"
                             )
