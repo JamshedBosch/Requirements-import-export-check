@@ -4,13 +4,15 @@ from tkinter import filedialog, ttk, messagebox, PhotoImage
 import os
 import tkinter as tk
 from tkinter import ttk
+import sys
 
 
 class ImportExportGui:
     def __init__(self, master):
         self.master = master
         master.title("Import Export Checker")
-        img = PhotoImage(file='icons/check.png')
+        icon_path = ImportExportGui.resource_path(os.path.join('icons', 'check.png'))
+        img = PhotoImage(file=icon_path)
         master.iconphoto(False, img)
         master.geometry("600x480")
         master.resizable(False, False)
@@ -210,6 +212,15 @@ class ImportExportGui:
         self.status_bar = ttk.Label(master, text="", relief=tk.SUNKEN,
                                     anchor=tk.W, font=("Helvetica", 10))
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    def resource_path(relative_path):
+        """Get absolute path to resource, works for dev and for PyInstaller"""
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
 
     def show_about_dialog(self):
         about_text = (
