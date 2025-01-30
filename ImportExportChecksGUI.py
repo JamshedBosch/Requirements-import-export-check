@@ -10,7 +10,7 @@ class ImportExportGui:
     def __init__(self, master):
         self.master = master
         master.title("Import Export Checker")
-        master.geometry("600x450")
+        master.geometry("600x480")
         master.resizable(False, False)
 
         # Apply custom styles
@@ -179,6 +179,31 @@ class ImportExportGui:
                                          style='TButton', stat=tk.DISABLED)
         self.execute_button.pack(side=tk.LEFT, padx=20)
 
+        # Report Type Selection Frame
+        self.report_type_frame = ttk.Frame(master)
+        self.report_type_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+
+        # Report Type Label
+        ttk.Label(self.report_type_frame, text="Report Type:",
+                  font=("Helvetica", 12)).grid(row=0, column=0, sticky="w")
+
+        # Report Type Variable
+        self.report_type_var = tk.StringVar(value="HTML")  # Default: HTML
+
+        # Excel Report Radio Button
+        ttk.Radiobutton(self.report_type_frame, text="HTML",
+                        variable=self.report_type_var,
+                        value="HTML",
+                        style='TRadiobutton').grid(row=0, column=1, padx=10,
+                                                   sticky="w")
+
+        # HTML Report Radio Button
+        ttk.Radiobutton(self.report_type_frame, text="Excel",
+                        variable=self.report_type_var,
+                        value="Excel",
+                        style='TRadiobutton').grid(row=0, column=2, padx=10,
+                                                   sticky="w")
+
         # Status bar
         self.status_bar = ttk.Label(master, text="", relief=tk.SUNKEN,
                                     anchor=tk.W, font=("Helvetica", 10))
@@ -294,6 +319,8 @@ class ImportExportGui:
         print(f"execute_checks for Project: {project_type}")
         check_type = self.check_type_var.get()
         print(f"Checks type is: {check_type}")
+        report_type = self.report_type_var.get()
+        print(f"Report type is: {report_type}")
 
         self.update_status_bar(
             f"{self.operation_type()} Checks processing started...")
@@ -302,7 +329,7 @@ class ImportExportGui:
         print(f"Path of the refernce file is:  '{reference_file}'")
 
         processor = ChecksProcessor(project_type, check_type, self.excel_path_var.get(),
-                                    reference_file)
+                                    reference_file, report_type)
         reports = processor.process_folder()
         self.update_status_bar(
             f"Processed {len(reports)} files. Check reports in {CheckConfiguration.REPORT_FOLDER}")

@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 from typing import Dict, Any, List
 import difflib
+import pandas as pd
 
 
 class ReportGenerator:
@@ -229,7 +230,24 @@ class ReportGenerator:
                    </div>"""
 
     @staticmethod
-    def generate_report(file_path, report_folder, findings):
+    def generate_excel_report(file_path, report_folder, findings):
+        """Generate an Excel report for findings."""
+        report_file = os.path.join(report_folder,
+                                   f"{os.path.basename(file_path).replace('.xlsx', '')}_report.xlsx")
+
+        # Convert findings into a DataFrame
+        df = pd.DataFrame(findings)
+
+        # Rename the Value column to Details
+        df = df.rename(columns={'Value': 'Details'})
+
+        # Save to Excel
+        df.to_excel(report_file, index=False)
+
+        return report_file
+
+    @staticmethod
+    def generate_report(file_path, report_folder, report_type,  findings):
         """
         Generate a visually enhanced and more readable HTML report.
 
@@ -241,23 +259,27 @@ class ReportGenerator:
         Returns:
             str: Path to the generated report file
         """
-        # Create report filename
-        base_name = os.path.basename(file_path).replace('.xlsx', '')
-        report_file = os.path.join(report_folder, f"{base_name}_report.html")
+        report_type = report_type.lower()
+        if report_type == 'excel':
+            return ReportGenerator.generate_excel_report(file_path,report_folder, findings)
+        else:
+            # Create report filename
+            base_name = os.path.basename(file_path).replace('.xlsx', '')
+            report_file = os.path.join(report_folder, f"{base_name}_report.html")
 
-        # Generate issues content
-        issues_content = "\n".join(
-            ReportGenerator.format_issue(finding) for finding in findings)
+            # Generate issues content
+            issues_content = "\n".join(
+                ReportGenerator.format_issue(finding) for finding in findings)
 
-        # Generate the complete HTML content
-        html_content = ReportGenerator.generate_html_content(
-            file_name=os.path.basename(file_path),
-            total_issues=len(findings),
-            issues_content=issues_content
-        )
+            # Generate the complete HTML content
+            html_content = ReportGenerator.generate_html_content(
+                file_name=os.path.basename(file_path),
+                total_issues=len(findings),
+                issues_content=issues_content
+            )
 
-        # Write the report
-        with open(report_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
+            # Write the report
+            with open(report_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
 
-        return report_file
+            return report_file

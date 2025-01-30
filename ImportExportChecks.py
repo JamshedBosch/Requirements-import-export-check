@@ -16,21 +16,24 @@ class CheckConfiguration:
         "SSP": "SSP"
     }
 
+    REPORT_FOLDER = os.path.join(os.getcwd(), "report")
+
+
     IMPORT_FOLDERS = {
         IMPORT_CHECK: r"D:\AUDI\Import_Reqif2Excel_Converted",
         EXPORT_CHECK: r"D:\AUDI\Export_Reqif2Excel_Converted"
     }
 
-    REPORT_FOLDER = os.path.join(os.getcwd(), "report")
 
 
 class ChecksProcessor:
     """Main processor for Excel file Checks."""
 
-    def __init__(self, project_type, check_type, excel_folder, compare_file=None):
+    def __init__(self, project_type, check_type, excel_folder, compare_file=None, report_type="HTML"):
         self.project = project_type
         self.check_type = check_type
         self.report_folder = CheckConfiguration.REPORT_FOLDER
+        self.report_type = report_type
         self.folder_path = excel_folder
         self.compare_file = compare_file
         self.compare_df = None  # Dataframe to hold compare file data
@@ -101,6 +104,7 @@ class ChecksProcessor:
                     ReportGenerator.generate_report(
                         self.compare_file,
                         self.report_folder,
+                        self.report_type,
                         rb_as_status_findings
                     )
 
@@ -124,7 +128,7 @@ class ChecksProcessor:
                 print("[SSP] NO EXPORT CHECKS DEFINED SOFAR")
 
         # Generate report
-        return ReportGenerator.generate_report(file_path, self.report_folder,
+        return ReportGenerator.generate_report(file_path, self.report_folder, self.report_type,
                                                findings)
 
     def _delete_folder(self, folder_path):
