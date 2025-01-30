@@ -10,6 +10,8 @@ class ImportExportGui:
     def __init__(self, master):
         self.master = master
         master.title("Import Export Checker")
+        img = PhotoImage(file='icons/check.png')
+        master.iconphoto(False, img)
         master.geometry("600x480")
         master.resizable(False, False)
 
