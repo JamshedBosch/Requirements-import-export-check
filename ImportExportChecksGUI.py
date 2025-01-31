@@ -14,7 +14,7 @@ class ImportExportGui:
         icon_path = ImportExportGui.resource_path(os.path.join('icons', 'check.png'))
         img = PhotoImage(file=icon_path)
         master.iconphoto(False, img)
-        master.geometry("600x480")
+        master.geometry("600x500")
         master.resizable(False, False)
 
         # Apply custom styles
