@@ -26,7 +26,7 @@ class CheckConfiguration:
 
 
 
-class ChecksProcessor:
+class ChecksProcessorExcel:
     """Main processor for Excel file Checks."""
 
     def __init__(self, project_type, check_type, excel_folder, compare_file=None, report_type="HTML"):
@@ -146,9 +146,9 @@ def main():
     check_type = CheckConfiguration.IMPORT_CHECK  # Change to EXPORT_CHECK if needed
     compare_file = r"D:\AUDI\comparefile\CCB_Tracking_PPE.xlsx"
 
-    processor = ChecksProcessor(check_type,
-                                CheckConfiguration.IMPORT_FOLDERS[check_type],
-                                compare_file)
+    processor = ChecksProcessorExcel(check_type,
+                                     CheckConfiguration.IMPORT_FOLDERS[check_type],
+                                     compare_file)
     reports = processor.process_folder()
 
     print(

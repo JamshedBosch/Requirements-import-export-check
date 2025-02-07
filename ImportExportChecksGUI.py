@@ -1,5 +1,6 @@
 from ReqIF2ExelConverter import ReqIF2ExcelProcessor
-from ImportExportChecks import ChecksProcessor, CheckConfiguration
+from ImportExportChecksExcel import ChecksProcessorExcel, CheckConfiguration
+from reqif_utils import ReqIFProcessor
 from tkinter import filedialog, ttk, messagebox, PhotoImage
 import os
 import tkinter as tk
@@ -97,8 +98,6 @@ class ImportExportGui:
         self.project_dropdown.grid(row=0, column=1, padx=10, sticky="w")
         print(f"project selected is: {self.project_var.get()}")
 
-
-
         # Check Type Selection Frame
         self.check_type_frame = ttk.Frame(master)
         self.check_type_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
@@ -119,25 +118,29 @@ class ImportExportGui:
                         value=CheckConfiguration.EXPORT_CHECK,
                         style='TRadiobutton').grid(row=0, column=2, padx=10,
                                                    sticky="w")
+        # Comparison Type Selection Frame
+        self.comparison_type_frame = ttk.Frame(master)
+        self.comparison_type_frame.pack(side=tk.TOP, fill=tk.X, padx=20,
+                                        pady=10)
+        self.comparison_type_var = tk.StringVar(value="Excel")
 
-        # Add "Select compare file" label and checkbox
-        ttk.Label(self.check_type_frame, text="Select compare file:",
-                  font=("Helvetica", 12)).grid(row=1, column=0, sticky="w",
-                                               pady=(15, 5))
+        # Set the label for Comparison Type
+        ttk.Label(self.comparison_type_frame, text="Comparison Type:",
+                  font=("Helvetica", 12)).grid(row=0, column=0, sticky="w")
 
-        # Checkbox variable and button
-        self.show_path_var = tk.BooleanVar()
-        self.checkbox = ttk.Checkbutton(
-            self.check_type_frame,
-            text="",
-            variable=self.show_path_var,
-            command=self.toggle_reference_path,
-            style='NoFocus.TCheckbutton',
-            takefocus=False  # Prevent focus from keyboard
-        )
-        self.checkbox.grid(row=1, column=1, sticky="w", pady=(15, 5),
-                           padx=(10, 0))
-
+        # Create Radio buttons for Excel and ReqIF conversion
+        ttk.Radiobutton(self.comparison_type_frame, text="Excel Based",
+                        variable=self.comparison_type_var,
+                        value="Excel",
+                        command=self.toggle_conversion_type,
+                        style='TRadiobutton').grid(row=0, column=1, padx=10,
+                                                   sticky="w")
+        ttk.Radiobutton(self.comparison_type_frame, text="ReqIF Based",
+                        variable=self.comparison_type_var,
+                        value="ReqIF",
+                        command=self.toggle_conversion_type,
+                        style='TRadiobutton').grid(row=0, column=2, padx=10,
+                                                   sticky="w")
         # Paths Frame
         self.path_frame = ttk.Frame(master)
         self.path_frame.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
@@ -149,24 +152,8 @@ class ImportExportGui:
                             self.browse_unzip_path, 1)
         self.add_path_entry(self.path_frame, "Excel folder:",
                             self.browse_excel_path, 2)
-
-        # Reference path entry and browse button (initially hidden)
-        self.ref_path_var = tk.StringVar()
-        self.ref_path_label = ttk.Label(self.path_frame, text="Compare file:",
-                                        font=("Helvetica", 12))
-        self.ref_path_entry = ttk.Entry(
-            self.path_frame,
-            textvariable=self.ref_path_var,
-            width=40,
-            font=("Helvetica", 10)
-        )
-        self.ref_browse_button = tk.Button(
-            self.path_frame,
-            text="Browse",
-            command=self.browse_reference_path,
-            font=("Helvetica", 10),
-            width=10  # Match width with other browse buttons
-        )
+        self.add_path_entry(self.path_frame, "Compare file:",
+                            self.browse_reference_path, 3)
 
         # Buttons Frame
         self.button_frame = ttk.Frame(master)
@@ -175,12 +162,19 @@ class ImportExportGui:
         self.convert_button = ttk.Button(self.button_frame, text="Convert",
                                          command=self.convert_files,
                                          style='TButton')
-        self.convert_button.pack(side=tk.LEFT, padx=20)
 
         self.execute_button = ttk.Button(self.button_frame,
                                          text="Execute Checks",
                                          command=self.execute_checks,
                                          style='TButton', stat=tk.DISABLED)
+
+        self.execute_reqif_button = ttk.Button(self.button_frame,
+                                                text="Execute",
+                                                command=self.execute_reqif_checks,
+                                                style='TButton')
+
+        # Default view: Show Convert and Execute Checks buttons
+        self.convert_button.pack(side=tk.LEFT, padx=20)
         self.execute_button.pack(side=tk.LEFT, padx=20)
 
         # Report Type Selection Frame
@@ -212,6 +206,26 @@ class ImportExportGui:
         self.status_bar = ttk.Label(master, text="", relief=tk.SUNKEN,
                                     anchor=tk.W, font=("Helvetica", 10))
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # Store the original labels and fields
+        self.original_labels = []
+        self.original_entries = []
+
+        # Initialize the original labels and fields
+        self.initialize_original_fields()
+
+    def initialize_original_fields(self):
+        """Initialize the original labels and fields for Excel Conversion."""
+        self.original_labels = [
+            "ReqIF folder:", "Extract folder:", "Excel folder:",
+            "Compare file:"
+        ]
+        self.original_entries = [
+            (self.browse_reqif_path, 0),
+            (self.browse_unzip_path, 1),
+            (self.browse_excel_path, 2),
+            (self.browse_reference_path, 3)
+        ]
 
     def resource_path(relative_path):
         """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -245,6 +259,21 @@ class ImportExportGui:
                          font=("Helvetica", 10))
         entry.grid(row=row, column=1, padx=5, pady=10)
 
+        # If it's the Compare file field, set default text and add focus handlers
+        if label_text == "Compare file:":
+            entry_var.set("---- Optional ----")
+
+            def on_entry_click(event):
+                if entry_var.get() == "---- Optional ----":
+                    entry_var.set("")
+
+            def on_focus_out(event):
+                if entry_var.get() == "":
+                    entry_var.set("---- Optional ----")
+
+            entry.bind('<FocusIn>', on_entry_click)
+            entry.bind('<FocusOut>', on_focus_out)
+
         browse_button = tk.Button(parent, text="Browse",
                                   command=browse_command,
                                   font=("Helvetica", 10), width=10)
@@ -257,6 +286,12 @@ class ImportExportGui:
             self.unzip_path_var = entry_var
         elif label_text == "Excel folder:":
             self.excel_path_var = entry_var
+        elif label_text == "Compare file:":
+            self.ref_path_var = entry_var
+        elif label_text == "Customer ReqIF:":
+            self.cus_reqif_path_var = entry_var
+        elif label_text == "Bosch ReqIF:":
+            self.own_reqif_path_var = entry_var
 
     def browse_reqif_path(self):
         self.reqif_path_var.set(filedialog.askdirectory())
@@ -269,11 +304,47 @@ class ImportExportGui:
 
     def browse_reference_path(self):
         """Open file dialog to select reference Excel file"""
-        file_path = filedialog.askopenfilename(
+        self.ref_path_var.set(filedialog.askopenfilename(
             filetypes=[("Excel files", "*.xlsx;*.xls")]
-        )
-        if file_path:
-            self.ref_path_var.set(file_path)
+        ))
+
+    def browse_cus_reqif_path(self):
+        self.cus_reqif_path_var.set(filedialog.askdirectory())
+
+    def browse_bosch_reqif_path(self):
+        self.own_reqif_path_var.set(filedialog.askdirectory())
+
+    def toggle_conversion_type(self):
+        """Toggle the visibility of path entries based on the selected conversion type."""
+        if self.comparison_type_var.get() == "Excel":
+            # Clear the path frame
+            for widget in self.path_frame.winfo_children():
+                widget.destroy()
+
+            # Restore the original labels and fields
+            for label_text, (browse_command, row) in zip(self.original_labels,
+                                                         self.original_entries):
+                self.add_path_entry(self.path_frame, label_text,
+                                    browse_command, row)
+
+            # Hide the single Execute button and show Convert and Execute Checks buttons
+            self.execute_reqif_button.pack_forget()
+            self.convert_button.pack(side=tk.LEFT, padx=20)
+            self.execute_button.pack(side=tk.LEFT, padx=20)
+        else:
+            for widget in self.path_frame.winfo_children():
+                widget.destroy()
+
+            # Add fields for ReqIF Conversion
+            self.add_path_entry(self.path_frame, "Customer ReqIF:",
+                                self.browse_cus_reqif_path, 0)
+            self.add_path_entry(self.path_frame, "Bosch ReqIF:",
+                                self.browse_bosch_reqif_path, 1)
+
+            # Hide Convert and Execute Checks buttons and show the single Execute button
+            self.convert_button.pack_forget()
+            self.execute_button.pack_forget()
+            self.execute_reqif_button.pack(side=tk.LEFT, padx=20)
 
     def operation_type(self):
         """Execute the conversion logic based on the selected radio button."""
@@ -292,9 +363,9 @@ class ImportExportGui:
     def convert_files(self):
         check_type = self.operation_type()
         self.update_status_bar(f"Performing {check_type} Conversion...")
+        print(f"Project Type: {self.project_var.get()}")
         print(f"\n{check_type} Checks Active")
 
-        # Retrieve folder paths
         reqif_folder = self.reqif_path_var.get()
         unzip_folder = self.unzip_path_var.get()
         excel_folder = self.excel_path_var.get()
@@ -338,26 +409,67 @@ class ImportExportGui:
         self.update_status_bar(
             f"{self.operation_type()} Checks processing started...")
         self.master.update()  # Updates the Tkinter GUI before continuing
-        reference_file = self.ref_path_var.get() if self.show_path_var.get() else None
+        reference_file = self.ref_path_var.get() if self.ref_path_var.get() != "---- Optional ----" else None
         print(f"Path of the refernce file is:  '{reference_file}'")
 
-        processor = ChecksProcessor(project_type, check_type, self.excel_path_var.get(),
-                                    reference_file, report_type)
+        processor = ChecksProcessorExcel(project_type, check_type, self.excel_path_var.get(),
+                                         reference_file, report_type)
         reports = processor.process_folder()
         self.update_status_bar(
             f"Processed {len(reports)} files. Check reports in {CheckConfiguration.REPORT_FOLDER}")
 
-    def toggle_reference_path(self):
-        """Show or hide the reference path entry and browse button based on checkbox state"""
-        if self.show_path_var.get():
-            self.ref_path_label.grid(row=3, column=0, sticky="w", pady=10)
-            self.ref_path_entry.grid(row=3, column=1, padx=5, pady=10)
-            self.ref_browse_button.grid(row=3, column=2, padx=5, pady=10)
-        else:
-            self.ref_path_label.grid_remove()
-            self.ref_path_entry.grid_remove()
-            self.ref_browse_button.grid_remove()
-            self.ref_path_var.set("")
+    def execute_reqif_checks(self):
+        """Execute checks for ReqIF Conversion."""
+        customer_reqif_path = self.cus_reqif_path_var.get()
+        own_reqif_path = self.own_reqif_path_var.get()
+
+        if not customer_reqif_path or not own_reqif_path:
+            self.update_status_bar(
+                "Please select both Customer ReqIF and Own ReqIF.")
+            return
+
+        self.update_status_bar("Executing ReqIF checks...")
+        print(f"Customer ReqIF: {customer_reqif_path}")
+        print(f"Bosch ReqIF: {own_reqif_path}")
+
+        # Create an instance of ReqIFProcessor
+        reqif_processor = ReqIFProcessor()
+
+        try:
+            # Extract .reqifz files (if necessary) and get paths to .reqif files
+            customer_reqif_file, own_reqif_file = reqif_processor.extract_reqifz_files(
+                customer_reqif_path, own_reqif_path
+            )
+            print(f"Customer ReqIF file: {customer_reqif_file}")
+            print(f"Own ReqIF file: {own_reqif_file}")
+
+            # Perform the comparison of the .reqif files
+            self.update_status_bar("Comparing ReqIF files...")
+            self.compare_reqif_files(customer_reqif_file, own_reqif_file)
+
+        except Exception as e:
+            self.update_status_bar(f"Error during ReqIF checks: {str(e)}")
+        finally:
+            # Clean up temporary directories
+            print("Deletion to be perfomed here")
+            reqif_processor.cleanup_temp_dirs()
+
+        self.update_status_bar("ReqIF checks completed successfully.")
+
+    def compare_reqif_files(self, customer_reqif_file, own_reqif_file):
+        """
+        Compare the two .reqif files.
+        Add your specific comparison logic here.
+        """
+        # Example: Print the paths of the files being compared
+        print(f"Comparing Customer ReqIF: {customer_reqif_file}")
+        print(f"Comparing Own ReqIF: {own_reqif_file}")
+
+        # Add your comparison logic here
+        # For example, parse the .reqif files and compare their contents
+        # ...
+
+        # ... (rest of the class remains the same)
 
     def update_status_bar(self, message):
         self.status_bar.config(text=message)
