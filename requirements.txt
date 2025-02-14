@@ -1,0 +1,3 @@
+pandas~=2.2.2
+pyreqif~=0+untagged.107.g407939f
+future~=1.0.0
